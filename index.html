@@ -619,14 +619,14 @@ app.addEventListener("toggle", e => {
 function vEventi() {
   const w = W("eventi");
   const evs = eventiAnno().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
-  return `<div class="panel-head"><h2>Eventi e progetti ${ANNO}</h2>${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div>
+  return `<div class="panel-head"><h2>Eventi e progetti ${ANNO}</h2><div class="actions">${evs.length ? `<button data-stampa="eventi">Stampa tutti (Excel)</button>` : ""}${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div></div>
   <div class="events">${evs.length ? evs.map(ev => {
     const st = eventStats(ev);
     const res = r2(st.voci.reduce((s, v) => s + v.residuo, 0));
     const ms = R("prima_nota") ? S.mov.filter(m => m.evento === ev.id) : [];
     return `<details class="panel ev-card" data-ev="${esc(ev.id)}" ${evOpen.has(ev.id) ? "open" : ""}>
       <summary><div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>
-        <div class="actions"><span class="toggle"><span class="apri">Mostra dettaglio ▾</span><span class="chiudi">Nascondi dettaglio ▴</span></span>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div></div>
+        <div class="actions"><span class="toggle"><span class="apri">Mostra dettaglio ▾</span><span class="chiudi">Nascondi dettaglio ▴</span></span><button data-stampa="evento:${esc(ev.id)}">Stampa (Excel)</button>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div></div>
       <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${st.prevTot ? `<div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div></summary>
       <div class="ev-body">
       ${ev.note ? `<p class="muted">${esc(ev.note)}</p>` : ""}
@@ -722,7 +722,7 @@ function vTessere() {
   const altre = q ? S.tesserati.filter(p => match(p) && !curIds.has(p.id)) : [];
   return `<section class="panel">
     <div class="panel-head"><h2>Tessere ${anno}</h2>
-      <div class="actions"><button id="btn-csv-tess">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newtess">Registra tessera ${annoNuovo()}</button>` : ""}</div></div>
+      <div class="actions"><button data-stampa="tessere">Stampa (Excel)</button>${w ? `<button class="primary" id="btn-newtess">Registra tessera ${annoNuovo()}</button>` : ""}</div></div>
     <p class="muted">La tessera si paga l'anno prima: a fine ${annoNuovo() - 1} si raccolgono le tessere ${annoNuovo()}. Possono averla anche i non soci.</p>
     <div class="kv"><div><span>Tessere</span><span>${cur.length}</span></div><div><span>Pagate</span><span>${cnt("pagata")}</span></div><div><span>Da pagare</span><span class="${cnt("da_pagare") ? "neg" : ""}">${cnt("da_pagare")}</span></div><div><span>Onorarie</span><span>${cnt("onoraria")}</span></div><div><span>Di cui soci</span><span>${soci}</span></div><div><span>Rinnovi / nuovi</span><span>${rinnovi} / ${cur.length - rinnovi}</span></div><div><span>Non rinnovati</span><span>${nonRinnovati.length}</span></div>${incassato ? `<div><span>Incassato</span><span>${fmt(incassato)}</span></div>` : ""}</div>
     <div class="filters">
@@ -1269,6 +1269,166 @@ function buildWorkbook(ExcelJS, d, focus) {
   return wb;
 }
 
+// Stampe Excel aggiuntive: eventi e tessere (stesso stile delle altre stampe)
+function xlKit(ExcelJS, anno, oggi) {
+  const C = { brown: "FF8A6420", ink: "FF1E1E1E", grey: "FF6B6B6B", line: "FFD9D6CF", band: "FFF1EFEA", green: "FF2E6B34", red: "FFA63A2A", white: "FFFFFFFF", amber: "FF9A6A00" };
+  const F = (o = {}) => ({ name: "Arial", size: 10, color: { argb: C.ink }, ...o });
+  const NUM = "#,##0.00";
+  const fill = argb => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
+  const bottom = () => ({ bottom: { style: "thin", color: { argb: C.line } } });
+  const topInk = () => ({ top: { style: "thin", color: { argb: C.ink } } });
+  const wb = new ExcelJS.Workbook(); wb.creator = "Gestionale Alkimia"; wb.created = new Date();
+  const k = {
+    C, F, NUM, fill, bottom, topInk, wb,
+    sheet(name, titoloPagina, widths) {
+      const ws = wb.addWorksheet(name);
+      ws.columns = widths.map(w => ({ width: w }));
+      ws.views = [{ showGridLines: false }];
+      ws.pageSetup = { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true, margins: { left: 0.5, right: 0.5, top: 0.75, bottom: 0.7, header: 0.3, footer: 0.3 } };
+      ws.headerFooter = { oddHeader: `&L&"Arial"&8&K6B6B6BASSOCIAZIONE CULTURALE ALKIMIA&R&"Arial"&8&K6B6B6B${titoloPagina}`, oddFooter: `&L&"Arial"&8&K6B6B6BDocumento generato il ${oggi}&R&"Arial"&8&K6B6B6BPagina &P di &N` };
+      ws.getCell("A1").value = "ASSOCIAZIONE CULTURALE ALKIMIA"; ws.getCell("A1").font = F({ bold: true, size: 9, color: { argb: C.brown } });
+      return ws;
+    },
+    titolo(ws, row, testo, sotto, lastCol) {
+      ws.getCell(`A${row}`).value = testo; ws.getCell(`A${row}`).font = F({ bold: true, size: 18 }); ws.getRow(row).height = 26;
+      ws.getCell(`A${row + 1}`).value = sotto; ws.getCell(`A${row + 1}`).font = F({ color: { argb: C.grey } });
+      for (let c = 1; c <= lastCol; c++) ws.getCell(row + 2, c).border = { bottom: { style: "medium", color: { argb: C.brown } } };
+      ws.getRow(row + 2).height = 6;
+    },
+    section(ws, row, testo, size = 12) { ws.getCell(`A${row}`).value = testo; ws.getCell(`A${row}`).font = F({ bold: true, size }); ws.getRow(row).height = 22; },
+    header(ws, row, labels, numCols = []) {
+      labels.forEach((l, i) => { const c = ws.getCell(row, i + 1); c.value = l; c.font = F({ bold: true, size: 9, color: { argb: C.white } }); c.fill = fill(C.ink); c.alignment = { vertical: "middle", horizontal: numCols.includes(i + 1) ? "right" : "left" }; });
+      ws.getRow(row).height = 20;
+    },
+    text(c, v, o = {}) { c.value = v; c.font = F(o); c.alignment = { vertical: "top", wrapText: true }; },
+    money(c, v, color, bold = false, fmt = NUM) { c.value = v; c.numFmt = fmt; c.font = F({ color: { argb: color || C.ink }, bold }); c.alignment = { horizontal: "right", vertical: "top" }; },
+    date(c, iso) { if (!iso) return; const [y, m, d] = iso.split("-").map(Number); c.value = new Date(Date.UTC(y, m - 1, d)); c.numFmt = "dd/mm/yyyy"; c.font = F(); c.alignment = { vertical: "top" }; },
+    line(ws, r, n) { for (let c = 1; c <= n; c++) ws.getCell(r, c).border = bottom(); },
+    total(ws, r, n) { for (let c = 1; c <= n; c++) { ws.getCell(r, c).fill = fill(C.band); ws.getCell(r, c).border = topInk(); } ws.getRow(r).height = 20; },
+    kv(ws, r, pairs, n) { // coppie etichetta/valore su due colonne
+      pairs.forEach(([l, v, col, fmt]) => { ws.mergeCells(r, 1, r, n - 1); k.text(ws.getCell(r, 1), l); typeof v === "string" ? k.text(ws.getCell(r, n), v, { bold: true }) : k.money(ws.getCell(r, n), v, col, true, fmt || NUM); if (typeof v === "string") ws.getCell(r, n).alignment = { horizontal: "right" }; k.line(ws, r, n); r++; });
+      return r;
+    }
+  };
+  return k;
+}
+
+// d: { anno, oggi, eventi: [{ id, nome, data, note, voci:[{cod,voce,importo,pagato}], E, U, fuori, mov:[{data,descrizione,causale,tipo,importo}] }], hasMov, singolo }
+function buildEventi(ExcelJS, d) {
+  const k = xlKit(ExcelJS, d.anno, d.oggi), { C, F } = k;
+  const titoloPag = d.singolo ? `Evento — ${d.eventi[0].nome}` : `Eventi e progetti — anno ${d.anno}`;
+  const ws = k.sheet(d.singolo ? "Evento" : `Eventi ${d.anno}`, titoloPag, [12, 44, 8, 14, 14, 14]);
+  const N = 6;
+  let r = 2;
+  if (d.singolo) {
+    const ev = d.eventi[0];
+    k.titolo(ws, r, ev.nome, `${ev.data ? "Data " + ev.data.split("-").reverse().join("/") + " — " : ""}situazione al ${d.oggi}`, N); r += 4;
+  } else {
+    k.titolo(ws, r, "Eventi e progetti", `Anno ${d.anno} — ${d.eventi.length} eventi — situazione al ${d.oggi}`, N); r += 4;
+    k.section(ws, r, "Riepilogo"); r++;
+    k.header(ws, r, ["Data", "Evento", "", "Entrate", "Uscite", "Risultato"], [4, 5, 6]); ws.mergeCells(r, 2, r, 3); r++;
+    const r0 = r;
+    for (const ev of d.eventi) {
+      k.date(ws.getCell(r, 1), ev.data); ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), ev.nome);
+      k.money(ws.getCell(r, 4), ev.E, C.green); k.money(ws.getCell(r, 5), ev.U, C.red); k.money(ws.getCell(r, 6), { formula: `D${r}-E${r}` }, C.ink, true);
+      k.line(ws, r, N); r++;
+    }
+    ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), "TOTALE", { bold: true });
+    k.money(ws.getCell(r, 4), { formula: `SUM(D${r0}:D${r - 1})` }, C.green, true); k.money(ws.getCell(r, 5), { formula: `SUM(E${r0}:E${r - 1})` }, C.red, true); k.money(ws.getCell(r, 6), { formula: `D${r}-E${r}` }, C.ink, true);
+    k.total(ws, r, N);
+    if (d.eventi.length) ws.getRow(r).addPageBreak();
+    r += 2;
+  }
+  d.eventi.forEach((ev, i) => {
+    if (!d.singolo) { k.section(ws, r, ev.nome, 14); ws.getCell(r, 1).font = F({ bold: true, size: 14, color: { argb: C.brown } }); r++;
+      if (ev.data) { ws.mergeCells(r, 1, r, N); k.text(ws.getCell(r, 1), "Data " + ev.data.split("-").reverse().join("/"), { color: { argb: C.grey } }); r++; } }
+    k.header(ws, r, ["Sintesi", "", "", "", "", "Importo (EUR)"], [6]); ws.mergeCells(r, 1, r, 5); r++;
+    const s0 = r;
+    r = k.kv(ws, r, [["Entrate", ev.E, C.green], ["Uscite", ev.U, C.red]], N);
+    ws.mergeCells(r, 1, r, 5); k.text(ws.getCell(r, 1), { formula: `IF(F${r}>=0,"Risultato (avanzo)","Risultato (disavanzo)")`, result: ev.E - ev.U >= 0 ? "Risultato (avanzo)" : "Risultato (disavanzo)" }, { bold: true });
+    k.money(ws.getCell(r, 6), { formula: `F${s0}-F${s0 + 1}` }, C.ink, true); k.total(ws, r, N); r += 1;
+    if (ev.note) { r++; ws.mergeCells(r, 1, r, N); k.text(ws.getCell(r, 1), ev.note, { size: 9, color: { argb: C.grey } }); ws.getRow(r).height = 28; r++; }
+    if (ev.voci.length) {
+      r++; k.section(ws, r, "Preventivo costi"); r++;
+      k.header(ws, r, ["Cod.", "Voce di preventivo", "", "Preventivo", "Pagato", "Da spendere"], [4, 5, 6]); ws.mergeCells(r, 2, r, 3); r++;
+      const v0 = r;
+      for (const v of ev.voci) {
+        k.text(ws.getCell(r, 1), v.cod || "", { bold: true }); ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), v.voce);
+        k.money(ws.getCell(r, 4), v.importo); k.money(ws.getCell(r, 5), v.pagato, v.pagato > v.importo + 0.005 ? C.red : C.ink); k.money(ws.getCell(r, 6), { formula: `MAX(D${r}-E${r},0)` });
+        k.line(ws, r, N); r++;
+      }
+      if (ev.fuori) { ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), "Spese non collegate a una voce", { color: { argb: C.grey } }); k.money(ws.getCell(r, 5), ev.fuori); k.line(ws, r, N); r++; }
+      ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), "TOTALE", { bold: true });
+      ["D", "E", "F"].forEach((col, j) => k.money(ws.getCell(r, 4 + j), { formula: `SUM(${col}${v0}:${col}${r - 1})` }, C.ink, true));
+      k.total(ws, r, N); r++;
+    }
+    if (d.hasMov && ev.mov.length) {
+      r++; k.section(ws, r, "Movimenti collegati"); r++;
+      k.header(ws, r, ["Data", "Descrizione", "Cod.", "Entrate", "Uscite", ""], [4, 5]); r++;
+      const m0 = r;
+      for (const m of ev.mov) {
+        k.date(ws.getCell(r, 1), m.data); k.text(ws.getCell(r, 2), m.descrizione); k.text(ws.getCell(r, 3), m.causale || "");
+        if (m.tipo === "E") k.money(ws.getCell(r, 4), m.importo, C.green); else k.money(ws.getCell(r, 5), m.importo, C.red);
+        k.line(ws, r, N); r++;
+      }
+      k.text(ws.getCell(r, 2), "TOTALE", { bold: true });
+      k.money(ws.getCell(r, 4), { formula: `SUM(D${m0}:D${r - 1})` }, C.green, true); k.money(ws.getCell(r, 5), { formula: `SUM(E${m0}:E${r - 1})` }, C.red, true);
+      k.total(ws, r, N); r++;
+    }
+    if (!d.singolo && i < d.eventi.length - 1) ws.getRow(r).addPageBreak();
+    r += 2;
+  });
+  ws.pageSetup.printArea = `A1:F${r}`;
+  return k.wb;
+}
+
+// d: { anno, oggi, filtro, righe:[{numero,cognome,nome,socio,email,telefono,stato,importo,data,note,nuovo}], nonRinnovati: bool }
+function buildTessere(ExcelJS, d) {
+  const k = xlKit(ExcelJS, d.anno, d.oggi), { C } = k;
+  const STATI = { pagata: "Pagata", da_pagare: "Da pagare", onoraria: "Onoraria" };
+  const titoloPag = d.nonRinnovati ? `Tessere non rinnovate — ${d.anno}` : `Tessere — anno ${d.anno}`;
+  const nr = d.nonRinnovati;
+  const ws = k.sheet(`Tessere ${d.anno}`, titoloPag, nr ? [28, 8, 34, 18] : [6, 28, 8, 30, 15, 12, 12, 12]);
+  const N = nr ? 4 : 8;
+  k.titolo(ws, 2, nr ? `Tessere ${d.anno - 1} non ancora rinnovate` : `Registro tessere ${d.anno}`, `${d.righe.length} ${nr ? "persone" : "tessere"}${d.filtro ? " — " + d.filtro : ""} — situazione al ${d.oggi}`, N);
+  let r = 6;
+  const hdr = nr ? ["Persona", "Socio", "Email", "Telefono"] : ["N.", "Persona", "Socio", "Email", "Telefono", "Stato", "Importo", "Pagata il"];
+  const first = r + (nr ? 0 : 0);
+  if (!nr) {
+    k.section(ws, r, "Sintesi"); r++;
+    k.header(ws, r, ["Voce", "", "", "", "", "", "", "Numero / EUR"], [8]); ws.mergeCells(r, 1, r, 7); r++;
+    var sint = r; r += 7;
+  }
+  r++;
+  const hdrRow = r;
+  k.header(ws, r, hdr, nr ? [] : [1, 7]); if (!nr) ws.getCell(r, 7).value = "Importo"; r++;
+  const t0 = r;
+  for (const x of d.righe) {
+    const cells = nr ? [`${x.cognome} ${x.nome}`, x.socio ? "Sì" : "", x.email || "", x.telefono || ""]
+      : [x.numero ?? "", `${x.cognome} ${x.nome}`, x.socio ? "Sì" : "", x.email || "", x.telefono || "", STATI[x.stato] || x.stato, null, null];
+    cells.forEach((v, i) => { if (v !== null) k.text(ws.getCell(r, i + 1), v); });
+    if (!nr) {
+      ws.getCell(r, 1).alignment = { horizontal: "right", vertical: "top" };
+      ws.getCell(r, 6).font = k.F({ bold: true, color: { argb: x.stato === "pagata" ? C.green : x.stato === "da_pagare" ? C.red : C.amber } });
+      if (x.importo != null) k.money(ws.getCell(r, 7), x.importo);
+      k.date(ws.getCell(r, 8), x.data);
+      if (x.note) { ws.getCell(r, 2).value = { richText: [{ text: `${x.cognome} ${x.nome}`, font: k.F() }, { text: `\n${x.note}`, font: k.F({ size: 8, color: { argb: C.grey } }) }] }; }
+    }
+    k.line(ws, r, N); r++;
+  }
+  if (!nr) {
+    const rng = col => `${col}${t0}:${col}${Math.max(r - 1, t0)}`;
+    k.text(ws.getCell(r, 2), "TOTALE INCASSATO", { bold: true });
+    k.money(ws.getCell(r, 7), { formula: `SUMIFS(${rng("G")},${rng("F")},"Pagata")` }, C.ink, true); k.total(ws, r, N);
+    const pairs = [["Tessere", { formula: `COUNTA(${rng("B")})` }], ["Pagate", { formula: `COUNTIF(${rng("F")},"Pagata")` }, C.green], ["Da pagare", { formula: `COUNTIF(${rng("F")},"Da pagare")` }, C.red], ["Onorarie", { formula: `COUNTIF(${rng("F")},"Onoraria")` }], ["Di cui soci", { formula: `COUNTIF(${rng("C")},"Sì")` }], ["Nuovi rispetto all'anno precedente", d.righe.filter(x => x.nuovo).length], ["Incassato (EUR)", { formula: `G${r}` }, C.ink, k.NUM]];
+    let q = sint;
+    pairs.forEach(([l, v, col, fmt]) => { ws.mergeCells(q, 1, q, 7); k.text(ws.getCell(q, 1), l); k.money(ws.getCell(q, 8), v, col || C.ink, true, fmt || "0"); k.line(ws, q, N); q++; });
+  }
+  ws.pageSetup.printArea = `A1:${String.fromCharCode(64 + N)}${r}`;
+  ws.pageSetup.printTitlesRow = `${hdrRow}:${hdrRow}`;
+  return k.wb;
+}
+
 let excelJsP = null;
 function loadExcelJs() {
   if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
@@ -1287,10 +1447,29 @@ async function stampaExcel(focus, btn) {
       totU: R("prima_nota") ? r2(S.mov.filter(m => m.tipo === "U").reduce((a, m) => a + m.importo, 0)) : (Number(r.uscite) || 0) + Math.max(-nc, 0),
       saldiConti: r.saldi_conti || {}, saldiAl: r.saldi_al, conti: CONTI, perMese: r.per_mese || [],
       dateFuoriAnno: S.mov.some(m => !m.data.startsWith(String(ANNO))) };
-    const wb = buildWorkbook(ExcelJS, d, focus);
+    let wb, nome;
+    if (focus === "eventi" || focus.startsWith("evento:")) {
+      const lista = focus === "eventi" ? eventiAnno().sort((a, b) => (a.data || "").localeCompare(b.data || "")) : [eventoById(focus.slice(7))];
+      const eventi = lista.map(ev => { const st = eventStats(ev); return { ...ev, voci: st.voci, E: st.E, U: st.U, fuori: st.fuori, mov: S.mov.filter(m => m.evento === ev.id) }; });
+      wb = buildEventi(ExcelJS, { anno: ANNO, oggi, eventi, hasMov: R("prima_nota"), singolo: focus !== "eventi" });
+      nome = focus === "eventi" ? `Alkimia_${ANNO}_Eventi.xlsx` : `Alkimia_Evento_${lista[0].nome.replace(/[^\w]+/g, "_")}.xlsx`;
+    } else if (focus === "tessere") {
+      const anno = ANNO, q = tf.q.trim().toLowerCase();
+      const match = p => (!q || nomeP(p).toLowerCase().includes(q) || (p?.email || "").toLowerCase().includes(q)) && (!tf.socio || (tf.socio === "si") === !!p?.socio_numero);
+      const prevIds = new Set(S.tessere.filter(t => t.anno === anno - 1).map(t => t.tesserato_id));
+      const curIds = new Set(S.tessere.filter(t => t.anno === anno).map(t => t.tesserato_id));
+      const nr = tf.vista === "non_rinnovati";
+      const righe = nr
+        ? [...prevIds].filter(id => !curIds.has(id)).map(personaById).filter(p => p && match(p)).sort((a, b) => nomeP(a).localeCompare(nomeP(b))).map(p => ({ cognome: p.cognome, nome: p.nome, socio: !!p.socio_numero, email: p.email, telefono: p.telefono }))
+        : S.tessere.filter(t => t.anno === anno && (tf.vista !== "da_pagare" || t.stato === "da_pagare")).map(t => ({ t, p: personaById(t.tesserato_id) })).filter(x => match(x.p))
+            .sort((a, b) => (a.t.numero ?? 9999) - (b.t.numero ?? 9999)).map(({ t, p }) => ({ numero: t.numero, cognome: p.cognome, nome: p.nome, socio: !!p.socio_numero, email: p.email, telefono: p.telefono, stato: t.stato, importo: t.importo, data: t.data_pagamento, note: t.note, nuovo: !prevIds.has(t.tesserato_id) }));
+      const filtro = [tf.vista === "da_pagare" ? "solo da pagare" : "", tf.socio === "si" ? "solo soci" : tf.socio === "no" ? "solo non soci" : "", q ? `ricerca "${tf.q.trim()}"` : ""].filter(Boolean).join(", ");
+      wb = buildTessere(ExcelJS, { anno, oggi, filtro, righe, nonRinnovati: nr });
+      nome = `Alkimia_Tessere_${anno}${nr ? "_non_rinnovate" : ""}.xlsx`;
+    } else wb = buildWorkbook(ExcelJS, d, focus);
     const buf = await wb.xlsx.writeBuffer();
     const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
-    const a = document.createElement("a"); a.href = url; a.download = `Alkimia_${ANNO}_${{ movimenti: "Movimenti", rendiconto: "Rendiconto", cruscotto: "Cruscotto" }[focus]}.xlsx`;
+    const a = document.createElement("a"); a.href = url; a.download = nome || `Alkimia_${ANNO}_${{ movimenti: "Movimenti", rendiconto: "Rendiconto", cruscotto: "Cruscotto" }[focus]}.xlsx`;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
   } catch (e) { S.error = "Non sono riuscito a creare il file Excel: " + (e.message || e); render(); }
   finally { btn.disabled = false; btn.textContent = testo; }
@@ -1332,7 +1511,7 @@ document.addEventListener("click", async e => {
   else if (t.dataset.socio) openSocio(S.soci.find(s => s.numero === Number(t.dataset.socio)));
   else if (t.id === "btn-newutente") openUtente();
   else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
-  else if (t.dataset.stampa) stampaExcel(t.dataset.stampa, t);
+  else if (t.dataset.stampa) { e.preventDefault(); stampaExcel(t.dataset.stampa, t); }
   else if (t.dataset.sort) { const [view, k] = t.dataset.sort.split(":"); const st = SORT[view]; SORT[view] = st && st.k === k ? { k, d: -st.d } : { k, d: 1 }; render(); }
   else if (t.id === "btn-crono") { delete SORT.movimenti; render(); }
   else if (t.id === "btn-reg-more") { regLimit += 100; t.disabled = true; const r = await sb.from("registro").select("*").order("id", { ascending: false }).limit(regLimit); if (!r.error) S.registro = r.data; render(); }
