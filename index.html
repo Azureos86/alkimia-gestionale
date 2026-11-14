@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestionale Alkimia</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: barra di sezioni in alto, una vista alla volta; riepilogo prima del dettaglio. */
+:root {
+  --bg: #f3f4f2;
+  --surface: #ffffff;
+  --ink: #1b2422;
+  --muted: #5d6a67;
+  --line: #d9dfdc;
+  --accent: #1f6f66;      /* verderame */
+  --accent-soft: #e1efec;
+  --brass: #8a6a1c;
+  --good: #2f7a3d;
+  --bad: #b23a2e;
+  --warn: #9a6a00;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121816; --surface: #1a2220; --ink: #e5ebe8; --muted: #9aa8a4; --line: #2c3734;
+    --accent: #5fbfb2; --accent-soft: #1f3330; --brass: #d3b260; --good: #6cc47c; --bad: #ee7d70; --warn: #e2b24a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121816; --surface: #1a2220; --ink: #e5ebe8; --muted: #9aa8a4; --line: #2c3734;
+  --accent: #5fbfb2; --accent-soft: #1f3330; --brass: #d3b260; --good: #6cc47c; --bad: #ee7d70; --warn: #e2b24a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font-body); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; }
+h1 { font-size: 26px; }
+h2 { font-size: 21px; }
+h3 { font-size: 17px; }
+.num, td.n, th.n { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+header.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 16px 0 8px; }
+.logo-row { display: flex; align-items: center; gap: 12px; }
+.logo { width: 44px; height: auto; flex: none; }
+.brand small { color: var(--muted); }
+nav { display: flex; gap: 4px; flex-wrap: wrap; padding-bottom: 8px; }
+nav a { color: var(--muted); text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; }
+nav a:hover { color: var(--ink); background: var(--accent-soft); }
+nav a[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+main { padding: 24px 0 48px; display: grid; gap: 20px; }
+.notice { padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); color: var(--ink); }
+.notice.bad { border-left: 4px solid var(--bad); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.tile .label { color: var(--muted); font-size: 13px; }
+.tile .value { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+tr.total td { font-weight: 600; border-top: 2px solid var(--ink); }
+.muted { color: var(--muted); }
+.pos { color: var(--good); }
+.neg { color: var(--bad); }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.chip.b { background: transparent; border: 1px solid var(--line); color: var(--brass); }
+.chip.ok { background: transparent; border: 1px solid var(--good); color: var(--good); }
+.chip.ko { background: transparent; border: 1px solid var(--bad); color: var(--bad); }
+.chip.wa { background: transparent; border: 1px solid var(--warn); color: var(--warn); }
+button, .btn { font: inherit; font-weight: 500; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 6px 12px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.link { border: none; background: none; color: var(--accent); padding: 2px 4px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+label { display: grid; gap: 3px; font-size: 13px; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.bar { height: 8px; border-radius: 4px; background: var(--accent-soft); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+.bar.over > span { background: var(--bad); }
+.events { display: grid; gap: 20px; }
+.kv { display: flex; gap: 20px; flex-wrap: wrap; }
+.kv div { display: grid; }
+.kv span:first-child { font-size: 12px; color: var(--muted); }
+.kv span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; background: var(--surface); color: var(--ink); width: min(560px, calc(100% - 32px)); }
+dialog::backdrop { background: rgba(10, 20, 18, .45); }
+dialog form { padding: 18px 20px; display: grid; gap: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-grid .full { grid-column: 1 / -1; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.actions .left { margin-right: auto; }
+.err { color: var(--bad); font-size: 13px; min-height: 1em; }
+svg text { fill: var(--muted); font: 11px var(--font-body); }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.prev-rows { display: grid; gap: 6px; }
+.prev-row { display: grid; grid-template-columns: 70px 1fr 100px 32px; gap: 6px; }
+@media (max-width: 520px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .prev-row { grid-template-columns: 60px 1fr 80px 28px; }
+  .wrap { padding: 0 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+.login { max-width: 420px; margin: 8vh auto 0; }
+.login form { display: grid; gap: 12px; }
+.userbox { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
+.perm-grid { display: grid; grid-template-columns: 1fr 160px; gap: 6px 10px; align-items: center; }
+.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; }
+.check input { width: auto; }
+pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted); max-width: 520px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo-row"><img class="logo" src="data:image/png;base64,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" alt="Logo Alkimia" width="44" height="48"><h1>Associazione Culturale Alkimia</h1></div>
+      <div class="userbox" id="userbox"></div>
+    </div>
+    <nav id="nav"></nav>
+  </div>
+</header>
+<div class="wrap"><main id="app"><p class="muted">Caricamento…</p></main></div>
+
+<dialog id="dlg-mov">
+  <form id="form-mov" method="dialog">
+    <h2 id="mov-title">Nuovo movimento</h2>
+    <div class="form-grid">
+      <label for="m-data">Data<input id="m-data" type="date" required></label>
+      <label for="m-tipo">Tipo<select id="m-tipo"><option value="E">Entrata</option><option value="U">Uscita</option></select></label>
+      <label for="m-importo">Importo (€)<input id="m-importo" type="number" step="0.01" min="0.01" required></label>
+      <label for="m-causale">Causale<select id="m-causale"></select></label>
+      <label for="m-desc" class="full">Descrizione<input id="m-desc" type="text" required maxlength="200"></label>
+      <label for="m-evento">Evento / progetto<select id="m-evento"></select></label>
+      <label for="m-voce">Voce di preventivo<select id="m-voce"></select></label>
+      <label for="m-conto">Conto<select id="m-conto"><option value="">Non indicato</option><option value="cc">Conto corrente</option><option value="contanti">Contanti</option><option value="prepagata">Prepagata</option><option value="paypal">PayPal</option></select></label>
+    </div>
+    <p class="err" id="mov-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="mov-del" hidden>Elimina</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-ev">
+  <form id="form-ev" method="dialog">
+    <h2 id="ev-title">Nuovo evento</h2>
+    <div class="form-grid">
+      <label for="e-nome" class="full">Nome<input id="e-nome" type="text" required maxlength="120"></label>
+      <label for="e-data">Data<input id="e-data" type="date"></label>
+      <label for="e-note" class="full">Note<textarea id="e-note" rows="2" maxlength="600"></textarea></label>
+    </div>
+    <h3>Preventivo costi</h3>
+    <div class="prev-rows" id="e-prev"></div>
+    <div><button type="button" id="e-addrow">Aggiungi voce</button></div>
+    <p class="err" id="ev-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="ev-del" hidden>Elimina evento</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-conti">
+  <form id="form-conti" method="dialog">
+    <h2>Saldi dei conti</h2>
+    <p class="muted">Inserisci i saldi letti dall'home banking e dalla cassa contanti: servono a controllare che la prima nota quadri.</p>
+    <div class="form-grid">
+      <label for="c-cc">Conto corrente<input id="c-cc" type="number" step="0.01"></label>
+      <label for="c-contanti">Contanti<input id="c-contanti" type="number" step="0.01"></label>
+      <label for="c-prepagata">Prepagata<input id="c-prepagata" type="number" step="0.01"></label>
+      <label for="c-paypal">PayPal<input id="c-paypal" type="number" step="0.01"></label>
+      <label for="c-al">Saldi al<input id="c-al" type="date"></label>
+    </div>
+    <p class="err" id="conti-err"></p>
+    <div class="actions"><button type="button" data-close>Annulla</button><button type="submit" class="primary">Salva</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-socio">
+  <form id="form-socio" method="dialog">
+    <h2 id="socio-title">Nuovo socio</h2>
+    <div class="form-grid">
+      <label for="s-numero">Numero<input id="s-numero" type="number" min="1" required></label>
+      <label for="s-ammissione">Data ammissione<input id="s-ammissione" type="date"></label>
+      <label for="s-cognome">Cognome<input id="s-cognome" type="text" required maxlength="80"></label>
+      <label for="s-nome">Nome<input id="s-nome" type="text" required maxlength="80"></label>
+      <label for="s-comune">Comune<input id="s-comune" type="text" maxlength="80"></label>
+      <label class="check" for="s-minorenne"><input id="s-minorenne" type="checkbox"> Minorenne</label>
+    </div>
+    <p class="err" id="socio-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="socio-del" hidden>Elimina socio</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-utente">
+  <form id="form-utente" method="dialog">
+    <h2 id="utente-title">Nuovo utente</h2>
+    <div class="form-grid">
+      <label for="u-email">Email<input id="u-email" type="email" required maxlength="200"></label>
+      <label for="u-nome">Nome<input id="u-nome" type="text" maxlength="80"></label>
+      <label class="check full" for="u-admin"><input id="u-admin" type="checkbox"> Amministratore (accesso completo e gestione utenti)</label>
+    </div>
+    <h3>Permessi per modulo</h3>
+    <div class="perm-grid" id="u-perms"></div>
+    <p class="err" id="utente-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="utente-del" hidden>Rimuovi utente</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+"use strict";
+const SUPABASE_URL = "https://adrmsohqaeactqgaybwe.supabase.co";
+const SUPABASE_KEY = "sb_publishable_3MJ8WkQW6cccYxbBMhEcDw_xCQSmokM";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PIANO = {
+  A1: "Entrate da quote associative e apporti dei fondatori", A2: "Erogazioni liberali",
+  A3: "Contributi da Enti Pubblici", A4: "Contributi da non soci - attività non commerciali",
+  B1: "Materie prime, sussidiarie, di consumo e di merci", B2: "Servizi",
+  B3: "Prodotti per attività dell'associazione", B4: "Bolli e oneri statali", B5: "Uscite diverse di gestione"
+};
+const CONTI = { cc: "Conto corrente", contanti: "Contanti", prepagata: "Prepagata", paypal: "PayPal" };
+const MESI = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", soci: "Soci" };
+const LIVELLI = { none: "Nessun accesso", read: "Sola lettura", write: "Lettura e scrittura" };
+
+const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, config: null, soci: [], utenti: [], registro: [], error: "", loading: false };
+const filt = { q: "", causale: "", evento: "", mese: "" };
+let login = { step: "email", email: "", msg: "" };
+
+const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
+const fmt = v => eur.format(Math.round((Number(v) || 0) * 100) / 100);
+const r2 = v => Math.round(v * 100) / 100;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dIt = iso => iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "";
+const today = () => new Date().toISOString().slice(0, 10);
+const $ = id => document.getElementById(id);
+const app = $("app");
+
+const perm = m => !S.me ? "none" : S.me.is_admin ? "write" : (S.me.permessi?.[m] || "none");
+const R = m => perm(m) !== "none";
+const W = m => perm(m) === "write";
+const errMsg = e => {
+  const m = e?.message || String(e);
+  if (/row-level security|permission denied|42501/i.test(m)) return "Non hai il permesso per questa operazione.";
+  if (/foreign key/i.test(m)) return "Ci sono movimenti collegati: scollegali prima.";
+  if (/duplicate key/i.test(m)) return "Esiste già un elemento con questo codice.";
+  return "Operazione non riuscita: " + m;
+};
+
+// ---------- dati ----------
+async function loadAll() {
+  S.loading = true;
+  const jobs = [];
+  if (R("prima_nota")) {
+    jobs.push(sb.from("movimenti").select("*").order("data").order("updated_at").then(r => { if (r.error) throw r.error; S.mov = r.data.map(m => ({ ...m, importo: Number(m.importo) })); }));
+    jobs.push(sb.from("config").select("*").eq("id", 1).maybeSingle().then(r => { if (r.error) throw r.error; S.config = r.data; }));
+  } else S.mov = [];
+  if (R("eventi") || R("prima_nota")) jobs.push(sb.from("eventi").select("*").then(r => { if (r.error) throw r.error; S.eventi = r.data; }));
+  if (R("rendiconto") || R("prima_nota")) jobs.push(sb.rpc("riepilogo").then(r => { if (r.error) throw r.error; S.riep = r.data; }));
+  if (R("eventi")) jobs.push(sb.rpc("consuntivo_eventi").then(r => { if (r.error) throw r.error; S.cons = r.data.map(x => ({ ...x, totale: Number(x.totale) })); }));
+  if (R("soci")) jobs.push(sb.from("soci").select("*").order("numero").then(r => { if (r.error) throw r.error; S.soci = r.data; }));
+  if (S.me?.is_admin) {
+    jobs.push(sb.from("utenti").select("*").order("email").then(r => { if (r.error) throw r.error; S.utenti = r.data; }));
+    jobs.push(sb.from("registro").select("*").order("id", { ascending: false }).limit(100).then(r => { if (r.error) throw r.error; S.registro = r.data; }));
+  }
+  try { await Promise.all(jobs); S.error = ""; }
+  catch (e) { S.error = errMsg(e); }
+  S.loading = false;
+  render();
+}
+
+async function start(session) {
+  S.session = session;
+  if (!session) { S.me = null; render(); return; }
+  const email = session.user.email.toLowerCase();
+  const { data, error } = await sb.from("utenti").select("*").eq("email", email).maybeSingle();
+  if (error) { S.error = errMsg(error); render(); return; }
+  S.me = data;
+  if (!S.me) { render(); return; }
+  await loadAll();
+}
+
+// ---------- calcoli ----------
+const saldoIniziale = () => Number(S.riep?.saldo_iniziale ?? S.config?.saldo_iniziale ?? 0);
+const eventoById = id => S.eventi.find(e => e.id === id);
+function eventStats(ev) {
+  const rows = S.cons.filter(c => c.evento === ev.id);
+  const E = r2(rows.filter(c => c.tipo === "E").reduce((s, c) => s + c.totale, 0));
+  const U = r2(rows.filter(c => c.tipo === "U").reduce((s, c) => s + c.totale, 0));
+  const voci = (ev.preventivo || []).map(v => {
+    const pagato = r2(rows.filter(c => c.tipo === "U" && c.voce === v.id).reduce((s, c) => s + c.totale, 0));
+    return { ...v, importo: Number(v.importo) || 0, pagato, residuo: r2(Math.max((Number(v.importo) || 0) - pagato, 0)) };
+  });
+  const prevTot = r2(voci.reduce((s, v) => s + v.importo, 0));
+  const fuori = r2(rows.filter(c => c.tipo === "U" && !voci.some(v => v.id === c.voce)).reduce((s, c) => s + c.totale, 0));
+  return { E, U, diff: r2(E - U), voci, prevTot, fuori, n: rows.reduce((s, c) => s + Number(c.n), 0) };
+}
+
+// ---------- navigazione ----------
+function views() {
+  const v = [];
+  if (R("rendiconto")) v.push(["cruscotto", "Cruscotto"]);
+  if (R("prima_nota")) v.push(["movimenti", "Prima nota"]);
+  if (R("eventi")) v.push(["eventi", "Eventi"]);
+  if (R("rendiconto")) v.push(["rendiconto", "Rendiconto"]);
+  if (R("soci")) v.push(["soci", "Soci"]);
+  if (S.me?.is_admin) v.push(["utenti", "Utenti"], ["registro", "Registro modifiche"]);
+  return v;
+}
+function current() { const vs = views().map(x => x[0]); const h = location.hash.slice(1); return vs.includes(h) ? h : vs[0]; }
+
+function render() {
+  const ub = $("userbox");
+  if (!S.session) { $("nav").innerHTML = ""; ub.innerHTML = ""; app.innerHTML = vLogin(); bindLogin(); return; }
+  ub.innerHTML = `<span>${esc(S.me?.nome || S.session.user.email)}</span><button id="btn-logout">Esci</button>`;
+  if (!S.me) { $("nav").innerHTML = ""; app.innerHTML = `<section class="panel login"><h2>Accesso non abilitato</h2><p>L'indirizzo <strong>${esc(S.session.user.email)}</strong> non è ancora abilitato al gestionale. Chiedi al tesoriere di aggiungerti.</p></section>`; return; }
+  const vs = views(), v = current();
+  $("nav").innerHTML = vs.map(([k, n]) => `<a href="#${k}" ${k === v ? 'aria-current="page"' : ""}>${n}</a>`).join("");
+  let html = S.error ? `<p class="notice bad">${esc(S.error)}</p>` : "";
+  if (!v) { app.innerHTML = html + `<section class="panel"><p>Il tuo utente non ha ancora moduli abilitati.</p></section>`; return; }
+  html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, utenti: vUtenti, registro: vRegistro })[v]();
+  app.innerHTML = html;
+  if (v === "movimenti") bindFilters();
+}
+
+// ---------- login ----------
+function vLogin() {
+  if (login.step === "email") return `<section class="panel login">
+    <h2>Accedi al gestionale</h2>
+    <p class="muted">Inserisci la tua email: ti mandiamo un codice di accesso. Non serve nessuna password.</p>
+    <form id="form-login"><label for="l-email">Email<input id="l-email" type="email" required autocomplete="email" value="${esc(login.email)}"></label>
+    <p class="err" id="l-err">${esc(login.msg)}</p><button class="primary" type="submit" id="l-btn">Mandami il codice</button></form></section>`;
+  return `<section class="panel login">
+    <h2>Controlla la posta</h2>
+    <p class="muted">Abbiamo mandato un codice a <strong>${esc(login.email)}</strong>. Inseriscilo qui sotto, oppure apri il link che trovi nella mail.</p>
+    <form id="form-code"><label for="l-code">Codice<input id="l-code" type="text" inputmode="numeric" autocomplete="one-time-code" required pattern="[0-9]{6,10}" maxlength="10"></label>
+    <p class="err" id="l-err">${esc(login.msg)}</p>
+    <div class="actions"><button type="button" id="l-back">Cambia email</button><button class="primary" type="submit" id="l-btn">Entra</button></div></form></section>`;
+}
+function bindLogin() {
+  const f1 = $("form-login"), f2 = $("form-code");
+  if (f1) f1.addEventListener("submit", async e => {
+    e.preventDefault(); $("l-btn").disabled = true;
+    login.email = $("l-email").value.trim().toLowerCase();
+    const { error } = await sb.auth.signInWithOtp({ email: login.email, options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname } });
+    if (error) { login.msg = /rate/i.test(error.message) ? "Troppe richieste: aspetta qualche minuto e riprova." : "Invio non riuscito: " + error.message; $("l-btn").disabled = false; $("l-err").textContent = login.msg; return; }
+    login.step = "code"; login.msg = ""; render(); $("l-code").focus();
+  });
+  if (f2) {
+    f2.addEventListener("submit", async e => {
+      e.preventDefault(); $("l-btn").disabled = true;
+      const { error } = await sb.auth.verifyOtp({ email: login.email, token: $("l-code").value.trim(), type: "email" });
+      if (error) { $("l-err").textContent = "Codice non valido o scaduto. Riprova o fatti mandare un nuovo codice."; $("l-btn").disabled = false; }
+    });
+    $("l-back").addEventListener("click", () => { login = { step: "email", email: login.email, msg: "" }; render(); });
+  }
+}
+
+// ---------- viste ----------
+function vCruscotto() {
+  const r = S.riep || {};
+  const E = Number(r.entrate) || 0, U = Number(r.uscite) || 0, diff = r2(E - U);
+  const cassa = r2(saldoIniziale() + diff);
+  const sc = r.saldi_conti || {};
+  const sommaConti = r2(Object.keys(CONTI).reduce((s, k) => s + (Number(sc[k]) || 0), 0));
+  const delta = r2(sommaConti - cassa), quadra = Math.abs(delta) < 0.005;
+  const evs = [...S.eventi].sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+  const prossimo = R("eventi") ? (evs.find(e => (e.data || "") >= today()) || evs[evs.length - 1]) : null;
+  const ultimi = R("prima_nota") ? [...S.mov].slice(-6).reverse() : [];
+  return `<div class="tiles">
+    <div class="tile"><span class="label">Saldo di cassa calcolato</span><span class="value">${fmt(cassa)}</span><span class="muted">saldo iniziale ${fmt(saldoIniziale())}</span></div>
+    <div class="tile"><span class="label">Proventi ${esc(r.anno || "")}</span><span class="value pos">${fmt(E)}</span></div>
+    <div class="tile"><span class="label">Oneri ${esc(r.anno || "")}</span><span class="value neg">${fmt(U)}</span></div>
+    <div class="tile"><span class="label">${diff >= 0 ? "Avanzo" : "Disavanzo"} di gestione</span><span class="value ${diff >= 0 ? "pos" : "neg"}">${fmt(diff)}</span></div>
+  </div>
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-head"><h2>Quadratura dei conti</h2>${W("prima_nota") ? `<button id="btn-conti">Aggiorna saldi</button>` : ""}</div>
+      <div class="scroll"><table>
+        ${Object.entries(CONTI).map(([k, n]) => `<tr><td>${n}</td><td class="n">${fmt(sc[k])}</td></tr>`).join("")}
+        <tr class="total"><td>Totale conti${r.saldi_al ? ` <span class="muted">al ${dIt(r.saldi_al)}</span>` : ""}</td><td class="n">${fmt(sommaConti)}</td></tr>
+        <tr><td>Saldo da prima nota</td><td class="n">${fmt(cassa)}</td></tr>
+        <tr><td>Differenza</td><td class="n">${quadra ? `<span class="chip ok">Quadra</span>` : `<span class="chip ko">${fmt(delta)}</span>`}</td></tr>
+      </table></div>
+      ${quadra ? "" : `<p class="muted">La prima nota e i saldi dei conti non coincidono: manca un movimento oppure i saldi sono da aggiornare.</p>`}
+    </section>
+    <section class="panel"><h2>Entrate e uscite per mese</h2>${chartMesi(r.per_mese || [])}</section>
+  </div>
+  <div class="grid2">
+    ${ultimi.length ? `<section class="panel"><div class="panel-head"><h2>Ultimi movimenti</h2><a href="#movimenti">Tutta la prima nota</a></div>
+      <div class="scroll"><table>${ultimi.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></section>` : ""}
+    ${prossimo ? eventSummary(prossimo) : ""}
+  </div>`;
+}
+function eventSummary(ev) {
+  const st = eventStats(ev);
+  const pct = st.prevTot ? Math.min(100, st.U / st.prevTot * 100) : 0;
+  return `<section class="panel"><div class="panel-head"><h2>${esc(ev.nome)}</h2><a href="#eventi">Dettaglio eventi</a></div>
+    <div class="kv"><div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Già speso</span><span>${fmt(st.U)}</span></div><div><span>Entrate</span><span>${fmt(st.E)}</span></div></div>
+    ${st.prevTot ? `<div class="bar ${st.U > st.prevTot ? "over" : ""}" role="img" aria-label="Speso il ${Math.round(pct)}% del preventivo"><span style="width:${pct}%"></span></div><p class="muted">Speso il ${Math.round(st.U / st.prevTot * 100)}% del preventivo.</p>` : ""}
+  </section>`;
+}
+function chartMesi(pm) {
+  const E = Array(12).fill(0), U = Array(12).fill(0);
+  for (const x of pm) { const i = x.mese - 1; if (i >= 0 && i < 12) { E[i] = Number(x.E) || 0; U[i] = Number(x.U) || 0; } }
+  const max = Math.max(...E, ...U, 1);
+  const step = max > 600 ? 200 : max > 300 ? 100 : 50;
+  const top = Math.ceil(max / step) * step;
+  const W_ = 560, H = 220, L = 44, B = 24, T = 10, cw = (W_ - L - 6) / 12, bw = Math.min(14, cw / 2 - 3);
+  const y = v => T + (H - T - B) * (1 - v / top);
+  let g = "", bars = "";
+  for (let v = 0; v <= top; v += step) g += `<line x1="${L}" x2="${W_ - 4}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  for (let i = 0; i < 12; i++) {
+    const x = L + cw * i + cw / 2;
+    bars += `<rect x="${x - bw - 1}" y="${y(E[i])}" width="${bw}" height="${y(0) - y(E[i])}" fill="var(--accent)" rx="2"><title>${MESI[i]}: entrate ${fmt(E[i])}</title></rect>`;
+    bars += `<rect x="${x + 1}" y="${y(U[i])}" width="${bw}" height="${y(0) - y(U[i])}" fill="var(--brass)" rx="2"><title>${MESI[i]}: uscite ${fmt(U[i])}</title></rect>`;
+    bars += `<text x="${x}" y="${H - 6}" text-anchor="middle">${MESI[i]}</text>`;
+  }
+  return `<div class="legend"><span><i style="background:var(--accent)"></i>Entrate</span><span><i style="background:var(--brass)"></i>Uscite</span><span>valori in €</span></div>
+  <div class="scroll"><svg viewBox="0 0 ${W_} ${H}" width="100%" role="img" aria-label="Entrate e uscite mensili">${g}${bars}</svg></div>`;
+}
+
+function filtered() {
+  const q = filt.q.trim().toLowerCase();
+  return S.mov.filter(m =>
+    (!q || m.descrizione.toLowerCase().includes(q)) && (!filt.causale || m.causale === filt.causale) &&
+    (!filt.evento || (filt.evento === "-" ? !m.evento : m.evento === filt.evento)) && (!filt.mese || m.data.slice(5, 7) === filt.mese));
+}
+function vMovimenti() {
+  const w = W("prima_nota");
+  let saldo = saldoIniziale(); const prog = new Map();
+  for (const m of S.mov) { saldo = r2(saldo + (m.tipo === "E" ? m.importo : -m.importo)); prog.set(m.id, saldo); }
+  const list = filtered();
+  const E = r2(list.filter(m => m.tipo === "E").reduce((s, m) => s + m.importo, 0)), U = r2(list.filter(m => m.tipo === "U").reduce((s, m) => s + m.importo, 0));
+  const anyF = filt.q || filt.causale || filt.evento || filt.mese;
+  return `<section class="panel">
+    <div class="panel-head"><h2>Prima nota ${esc(S.config?.anno || "")}</h2>
+      <div class="actions"><button id="btn-csv">Esporta per Excel</button>${w ? `<button class="primary" id="btn-new">Nuovo movimento</button>` : ""}</div></div>
+    <div class="filters">
+      <label for="f-q">Cerca<input id="f-q" type="search" value="${esc(filt.q)}" placeholder="descrizione"></label>
+      <label for="f-c">Causale<select id="f-c"><option value="">Tutte</option>${Object.keys(PIANO).map(k => `<option ${filt.causale === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+      <label for="f-e">Evento<select id="f-e"><option value="">Tutti</option><option value="-" ${filt.evento === "-" ? "selected" : ""}>Nessun evento</option>${S.eventi.map(e => `<option value="${esc(e.id)}" ${filt.evento === e.id ? "selected" : ""}>${esc(e.nome)}</option>`).join("")}</select></label>
+      <label for="f-m">Mese<select id="f-m"><option value="">Tutti</option>${MESI.map((n, i) => { const v = String(i + 1).padStart(2, "0"); return `<option value="${v}" ${filt.mese === v ? "selected" : ""}>${n}</option>`; }).join("")}</select></label>
+    </div>
+    <p class="muted">${list.length} movimenti · entrate ${fmt(E)} · uscite ${fmt(U)}</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Data</th><th>Descrizione</th><th>Causale</th><th>Evento</th><th class="n">Entrata</th><th class="n">Uscita</th><th class="n">Saldo</th>${w ? "<th></th>" : ""}</tr></thead>
+      <tbody>
+      ${anyF ? "" : `<tr><td class="muted">01/01/${esc(S.config?.anno || "")}</td><td>Saldo iniziale</td><td></td><td></td><td class="n">${fmt(saldoIniziale())}</td><td></td><td class="n">${fmt(saldoIniziale())}</td>${w ? "<td></td>" : ""}</tr>`}
+      ${list.map(m => { const ev = eventoById(m.evento); return `<tr>
+        <td class="muted">${dIt(m.data)}</td>
+        <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}</td>
+        <td><span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span></td>
+        <td>${ev ? esc(ev.nome) : ""}</td>
+        <td class="n pos">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg">${m.tipo === "U" ? fmt(m.importo) : ""}</td>
+        <td class="n">${fmt(prog.get(m.id))}</td>
+        ${w ? `<td><button class="link" data-edit="${esc(m.id)}">Modifica</button></td>` : ""}</tr>`; }).join("")}
+      </tbody></table></div>
+  </section>`;
+}
+function bindFilters() {
+  const on = (id, key, ev) => { const el = $(id); el.addEventListener(ev, () => { filt[key] = el.value; const pos = el.selectionStart; render(); const n = $(id); n.focus(); if (key === "q" && pos != null) n.setSelectionRange(pos, pos); }); };
+  on("f-q", "q", "input"); on("f-c", "causale", "change"); on("f-e", "evento", "change"); on("f-m", "mese", "change");
+}
+
+function vEventi() {
+  const w = W("eventi");
+  const evs = [...S.eventi].sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+  return `<div class="panel-head"><h2>Eventi e progetti</h2>${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div>
+  <div class="events">${evs.length ? evs.map(ev => {
+    const st = eventStats(ev);
+    const res = r2(st.voci.reduce((s, v) => s + v.residuo, 0));
+    const ms = R("prima_nota") ? S.mov.filter(m => m.evento === ev.id) : [];
+    return `<section class="panel">
+      <div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div>
+      <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${st.prevTot ? `<div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div>
+      ${ev.note ? `<p class="muted">${esc(ev.note)}</p>` : ""}
+      ${st.voci.length ? `<div class="scroll"><table>
+        <thead><tr><th>Cod.</th><th>Voce di preventivo</th><th class="n">Preventivo</th><th class="n">Pagato</th><th class="n">Da spendere</th><th>Stato</th></tr></thead>
+        <tbody>${st.voci.map(v => `<tr><td><span class="chip b">${esc(v.cod || "")}</span></td><td>${esc(v.voce)}</td><td class="n">${fmt(v.importo)}</td><td class="n">${fmt(v.pagato)}</td><td class="n">${fmt(v.residuo)}</td><td>${v.pagato > v.importo + 0.005 ? `<span class="chip ko">Oltre il preventivo</span>` : v.pagato > 0 && v.residuo < 0.005 ? `<span class="chip ok">Pagato</span>` : v.pagato > 0 ? `<span class="chip wa">In corso</span>` : `<span class="muted">Da pagare</span>`}</td></tr>`).join("")}
+        ${st.fuori ? `<tr><td></td><td class="muted">Spese non collegate a una voce</td><td></td><td class="n">${fmt(st.fuori)}</td><td></td><td></td></tr>` : ""}
+        <tr class="total"><td></td><td>Totale</td><td class="n">${fmt(st.prevTot)}</td><td class="n">${fmt(st.U)}</td><td class="n">${fmt(res)}</td><td></td></tr></tbody></table></div>` : ""}
+      ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td><span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span></td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
+    </section>`;
+  }).join("") : `<p class="muted">Nessun evento registrato.</p>`}</div>`;
+}
+
+function vRendiconto() {
+  const r = S.riep || {}, pc = r.per_causale || {};
+  const E = Number(r.entrate) || 0, U = Number(r.uscite) || 0, diff = r2(E - U);
+  const row = k => `<tr><td><span class="chip ${k[0] === "B" ? "b" : ""}">${k}</span></td><td>${PIANO[k]}</td><td class="n">${fmt(pc[k])}</td></tr>`;
+  const A = Object.keys(PIANO).filter(k => k[0] === "A"), B = Object.keys(PIANO).filter(k => k[0] === "B");
+  return `<section class="panel">
+    <div class="panel-head"><h2>Rendiconto per cassa ${esc(r.anno || "")}</h2><span class="muted">dal 01/01 a oggi</span></div>
+    <div class="grid2">
+      <div class="scroll"><table><thead><tr><th colspan="2">Proventi</th><th class="n">Importo</th></tr></thead><tbody>${A.map(row).join("")}<tr class="total"><td></td><td>Totale proventi</td><td class="n">${fmt(E)}</td></tr></tbody></table></div>
+      <div class="scroll"><table><thead><tr><th colspan="2">Oneri</th><th class="n">Importo</th></tr></thead><tbody>${B.map(row).join("")}<tr class="total"><td></td><td>Totale oneri</td><td class="n">${fmt(U)}</td></tr></tbody></table></div>
+    </div>
+    <div class="scroll"><table>
+      <tr class="total"><td>${diff >= 0 ? "Avanzo" : "Disavanzo"} di gestione</td><td class="n ${diff >= 0 ? "pos" : "neg"}">${fmt(diff)}</td></tr>
+      <tr><td>Cassa e banca a inizio anno</td><td class="n">${fmt(saldoIniziale())}</td></tr>
+      <tr><td>Cassa e banca a fine periodo</td><td class="n">${fmt(saldoIniziale() + diff)}</td></tr>
+    </table></div>
+    <p class="muted">Le voci seguono il piano dei conti di Bilancio 2026.xlsx (A1–A4, B1–B5).</p>
+  </section>`;
+}
+
+function vSoci() {
+  const w = W("soci");
+  const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
+  const pagate = S.soci.filter(s => s.quote?.[anno] === true).length;
+  return `<section class="panel">
+    <div class="panel-head"><h2>Libro soci</h2><div class="actions"><button id="btn-csv-soci">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newsocio">Nuovo socio</button>` : ""}</div></div>
+    <div class="kv"><div><span>Soci iscritti</span><span>${S.soci.length}</span></div><div><span>Quota ${anno} registrata</span><span>${pagate} su ${S.soci.length}</span></div></div>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">N.</th><th>Socio</th><th>Comune</th><th>Ammissione</th><th>Note</th><th>Quota ${anno}</th>${w ? "<th></th>" : ""}</tr></thead>
+      <tbody>${S.soci.map(s => { const ok = s.quote?.[anno] === true; return `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td><td>${s.minorenne ? `<span class="chip wa">Minorenne</span>` : ""}</td>
+        <td>${w ? `<button class="link" data-quota="${s.numero}" aria-pressed="${ok}">${ok ? `<span class="chip ok">Pagata</span>` : "Segna pagata"}</button>` : ok ? `<span class="chip ok">Pagata</span>` : `<span class="muted">—</span>`}</td>
+        ${w ? `<td><button class="link" data-socio="${s.numero}">Modifica</button></td>` : ""}</tr>`; }).join("")}</tbody>
+    </table></div>
+  </section>`;
+}
+
+function vUtenti() {
+  const lv = (u, m) => u.is_admin ? "write" : (u.permessi?.[m] || "none");
+  const chip = l => l === "write" ? `<span class="chip ok">Scrittura</span>` : l === "read" ? `<span class="chip">Lettura</span>` : `<span class="muted">—</span>`;
+  return `<section class="panel">
+    <div class="panel-head"><h2>Utenti e permessi</h2><button class="primary" id="btn-newutente">Nuovo utente</button></div>
+    <p class="muted">Chi è in elenco entra con la propria email e un codice ricevuto per posta. I permessi sono applicati dal database, non solo dalla pagina.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Utente</th>${Object.values(MODULI).map(n => `<th>${n}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${S.utenti.map(u => `<tr><td>${esc(u.nome || "")}<br><span class="muted">${esc(u.email)}</span>${u.is_admin ? ` <span class="chip wa">Amministratore</span>` : ""}</td>
+        ${Object.keys(MODULI).map(m => `<td>${chip(lv(u, m))}</td>`).join("")}
+        <td><button class="link" data-utente="${esc(u.email)}">Modifica</button></td></tr>`).join("")}</tbody>
+    </table></div>
+  </section>`;
+}
+
+function vRegistro() {
+  const AZ = { INSERT: "Creato", UPDATE: "Modificato", DELETE: "Eliminato" };
+  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", config: "Saldi conti" };
+  const desc = r => { const d = r.dopo || r.prima || {}; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
+  return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime 100 operazioni, con chi le ha fatte.</p>
+    <div class="scroll"><table><thead><tr><th>Quando</th><th>Chi</th><th>Sezione</th><th>Operazione</th><th>Elemento</th></tr></thead>
+    <tbody>${S.registro.map(r => `<tr><td class="muted">${new Date(r.ts).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(r.utente || "script iniziale")}</td><td>${TB[r.tabella] || esc(r.tabella)}</td><td>${AZ[r.azione] || esc(r.azione)}</td><td>${esc(desc(r))}</td></tr>`).join("")}</tbody></table></div></section>`;
+}
+
+// ---------- dialog: movimento ----------
+let edMov = null, armMov = false;
+function fillCausali(tipo, sel) {
+  $("m-causale").innerHTML = Object.keys(PIANO).filter(k => k[0] === (tipo === "E" ? "A" : "B")).map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${k} · ${PIANO[k]}</option>`).join("");
+}
+function fillVoci(evId, sel) {
+  const voci = eventoById(evId)?.preventivo || [];
+  $("m-voce").innerHTML = `<option value="">Nessuna</option>` + voci.map(v => `<option value="${esc(v.id)}" ${v.id === sel ? "selected" : ""}>${esc(v.voce)}</option>`).join("");
+  $("m-voce").disabled = !voci.length || $("m-tipo").value !== "U";
+}
+function openMov(m) {
+  edMov = m || null; armMov = false;
+  $("mov-title").textContent = m ? "Modifica movimento" : "Nuovo movimento";
+  $("m-data").value = m?.data || today(); $("m-tipo").value = m?.tipo || "U"; $("m-importo").value = m ? m.importo : "";
+  $("m-desc").value = m?.descrizione || ""; $("m-conto").value = m?.conto || "";
+  fillCausali($("m-tipo").value, m?.causale);
+  $("m-evento").innerHTML = `<option value="">Nessuno</option>` + S.eventi.map(e => `<option value="${esc(e.id)}" ${e.id === m?.evento ? "selected" : ""}>${esc(e.nome)}</option>`).join("");
+  fillVoci(m?.evento || "", m?.voce || "");
+  $("mov-del").hidden = !m; $("mov-del").textContent = "Elimina"; $("mov-err").textContent = "";
+  $("dlg-mov").showModal();
+}
+$("m-tipo").addEventListener("change", () => { fillCausali($("m-tipo").value); fillVoci($("m-evento").value, $("m-voce").value); });
+$("m-evento").addEventListener("change", () => fillVoci($("m-evento").value));
+$("mov-del").addEventListener("click", async () => {
+  if (!armMov) { armMov = true; $("mov-del").textContent = "Conferma eliminazione"; return; }
+  const { error } = await sb.from("movimenti").delete().eq("id", edMov.id);
+  if (error) { $("mov-err").textContent = errMsg(error); return; }
+  $("dlg-mov").close(); loadAll();
+});
+$("form-mov").addEventListener("submit", async e => {
+  e.preventDefault();
+  const importo = r2(Number($("m-importo").value)), tipo = $("m-tipo").value;
+  if (!(importo > 0)) { $("mov-err").textContent = "Inserisci un importo maggiore di zero."; return; }
+  const row = { data: $("m-data").value, tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value, evento: $("m-evento").value || null, voce: tipo === "U" ? ($("m-voce").value || null) : null, conto: $("m-conto").value || null };
+  if (!row.data || !row.descrizione) { $("mov-err").textContent = "Data e descrizione sono obbligatorie."; return; }
+  const { error } = edMov ? await sb.from("movimenti").update(row).eq("id", edMov.id) : await sb.from("movimenti").insert(row);
+  if (error) { $("mov-err").textContent = errMsg(error); return; }
+  $("dlg-mov").close(); loadAll();
+});
+
+// ---------- dialog: evento ----------
+let edEv = null, armEv = false;
+function prevRow(v) {
+  const div = document.createElement("div");
+  div.className = "prev-row"; div.dataset.id = v?.id || "v" + Math.random().toString(36).slice(2, 8);
+  div.innerHTML = `<select aria-label="Codice" class="pv-cod">${Object.keys(PIANO).filter(k => k[0] === "B").map(k => `<option ${k === (v?.cod || "B2") ? "selected" : ""}>${k}</option>`).join("")}</select>
+    <input aria-label="Voce" class="pv-voce" type="text" maxlength="120" value="${esc(v?.voce || "")}" placeholder="Voce">
+    <input aria-label="Importo previsto" class="pv-imp" type="number" step="0.01" min="0" value="${v?.importo ?? ""}">
+    <button type="button" class="link" aria-label="Rimuovi voce">✕</button>`;
+  div.querySelector("button").addEventListener("click", () => div.remove());
+  return div;
+}
+function openEv(ev) {
+  edEv = ev || null; armEv = false;
+  $("ev-title").textContent = ev ? "Modifica evento" : "Nuovo evento";
+  $("e-nome").value = ev?.nome || ""; $("e-data").value = ev?.data || ""; $("e-note").value = ev?.note || "";
+  $("e-prev").innerHTML = ""; (ev?.preventivo || []).forEach(v => $("e-prev").appendChild(prevRow(v)));
+  $("ev-del").hidden = !ev; $("ev-del").textContent = "Elimina evento"; $("ev-err").textContent = "";
+  $("dlg-ev").showModal();
+}
+$("e-addrow").addEventListener("click", () => $("e-prev").appendChild(prevRow()));
+$("ev-del").addEventListener("click", async () => {
+  if (!armEv) { armEv = true; $("ev-del").textContent = "Conferma eliminazione"; return; }
+  const { error } = await sb.from("eventi").delete().eq("id", edEv.id);
+  if (error) { $("ev-err").textContent = errMsg(error); return; }
+  $("dlg-ev").close(); loadAll();
+});
+$("form-ev").addEventListener("submit", async e => {
+  e.preventDefault();
+  const preventivo = [...$("e-prev").children].map(r => ({ id: r.dataset.id, cod: r.querySelector(".pv-cod").value, voce: r.querySelector(".pv-voce").value.trim(), importo: r2(Number(r.querySelector(".pv-imp").value) || 0) })).filter(v => v.voce);
+  const row = { nome: $("e-nome").value.trim(), data: $("e-data").value || null, note: $("e-note").value.trim(), preventivo };
+  if (!row.nome) { $("ev-err").textContent = "Il nome è obbligatorio."; return; }
+  const { error } = edEv ? await sb.from("eventi").update(row).eq("id", edEv.id) : await sb.from("eventi").insert(row);
+  if (error) { $("ev-err").textContent = errMsg(error); return; }
+  $("dlg-ev").close(); loadAll();
+});
+
+// ---------- dialog: saldi ----------
+function openConti() {
+  const sc = S.config?.saldi_conti || {};
+  Object.keys(CONTI).forEach(k => $("c-" + k).value = sc[k] ?? "");
+  $("c-al").value = S.config?.saldi_al || today(); $("conti-err").textContent = "";
+  $("dlg-conti").showModal();
+}
+$("form-conti").addEventListener("submit", async e => {
+  e.preventDefault();
+  const saldi_conti = {}; Object.keys(CONTI).forEach(k => saldi_conti[k] = r2(Number($("c-" + k).value) || 0));
+  const { error } = await sb.from("config").update({ saldi_conti, saldi_al: $("c-al").value || null }).eq("id", 1);
+  if (error) { $("conti-err").textContent = errMsg(error); return; }
+  $("dlg-conti").close(); loadAll();
+});
+
+// ---------- dialog: socio ----------
+let edSocio = null, armSocio = false;
+function openSocio(s) {
+  edSocio = s || null; armSocio = false;
+  $("socio-title").textContent = s ? "Modifica socio" : "Nuovo socio";
+  $("s-numero").value = s?.numero ?? (Math.max(0, ...S.soci.map(x => x.numero)) + 1); $("s-numero").disabled = !!s;
+  $("s-cognome").value = s?.cognome || ""; $("s-nome").value = s?.nome || ""; $("s-comune").value = s?.comune || "";
+  $("s-ammissione").value = s?.ammissione || today(); $("s-minorenne").checked = !!s?.minorenne;
+  $("socio-del").hidden = !s; $("socio-del").textContent = "Elimina socio"; $("socio-err").textContent = "";
+  $("dlg-socio").showModal();
+}
+$("socio-del").addEventListener("click", async () => {
+  if (!armSocio) { armSocio = true; $("socio-del").textContent = "Conferma eliminazione"; return; }
+  const { error } = await sb.from("soci").delete().eq("numero", edSocio.numero);
+  if (error) { $("socio-err").textContent = errMsg(error); return; }
+  $("dlg-socio").close(); loadAll();
+});
+$("form-socio").addEventListener("submit", async e => {
+  e.preventDefault();
+  const row = { cognome: $("s-cognome").value.trim(), nome: $("s-nome").value.trim(), comune: $("s-comune").value.trim(), ammissione: $("s-ammissione").value || null, minorenne: $("s-minorenne").checked };
+  const { error } = edSocio ? await sb.from("soci").update(row).eq("numero", edSocio.numero) : await sb.from("soci").insert({ ...row, numero: Number($("s-numero").value) });
+  if (error) { $("socio-err").textContent = errMsg(error); return; }
+  $("dlg-socio").close(); loadAll();
+});
+
+// ---------- dialog: utente ----------
+let edUt = null, armUt = false;
+function openUtente(u) {
+  edUt = u || null; armUt = false;
+  $("utente-title").textContent = u ? "Modifica utente" : "Nuovo utente";
+  $("u-email").value = u?.email || ""; $("u-email").disabled = !!u; $("u-nome").value = u?.nome || "";
+  $("u-admin").checked = !!u?.is_admin;
+  const self = u && u.email === S.me.email;
+  $("u-admin").disabled = !!self;
+  $("u-perms").innerHTML = Object.entries(MODULI).map(([k, n]) => `<span>${n}</span><select id="up-${k}" aria-label="${n}">${Object.entries(LIVELLI).map(([lv, ln]) => `<option value="${lv}" ${(u?.permessi?.[k] || "none") === lv ? "selected" : ""}>${ln}</option>`).join("")}</select>`).join("");
+  $("utente-del").hidden = !u || self; $("utente-del").textContent = "Rimuovi utente"; $("utente-err").textContent = "";
+  $("dlg-utente").showModal();
+}
+$("utente-del").addEventListener("click", async () => {
+  if (!armUt) { armUt = true; $("utente-del").textContent = "Conferma rimozione"; return; }
+  const { error } = await sb.from("utenti").delete().eq("email", edUt.email);
+  if (error) { $("utente-err").textContent = errMsg(error); return; }
+  $("dlg-utente").close(); loadAll();
+});
+$("form-utente").addEventListener("submit", async e => {
+  e.preventDefault();
+  const permessi = {}; Object.keys(MODULI).forEach(k => permessi[k] = $("up-" + k).value);
+  const row = { nome: $("u-nome").value.trim(), is_admin: $("u-admin").checked, permessi };
+  const email = $("u-email").value.trim().toLowerCase();
+  if (!edUt && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("utente-err").textContent = "Inserisci un indirizzo email valido."; return; }
+  const { error } = edUt ? await sb.from("utenti").update(row).eq("email", edUt.email) : await sb.from("utenti").insert({ ...row, email });
+  if (error) { $("utente-err").textContent = errMsg(error); return; }
+  $("dlg-utente").close(); loadAll();
+});
+
+document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
+
+// ---------- export ----------
+function download(name, text) {
+  const url = URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
+const n = v => v ? String(r2(v)).replace(".", ",") : "";
+function csvMov() {
+  const lines = [["Data", "Entrate", "Uscite", "Descrizione", "Causale", "Evento", "Conto"].join(";")];
+  lines.push([`01/01/${S.config?.anno || ""}`, n(saldoIniziale()), "", q("Saldo iniziale"), "-", "", ""].join(";"));
+  for (const m of S.mov) lines.push([dIt(m.data), m.tipo === "E" ? n(m.importo) : "", m.tipo === "U" ? n(m.importo) : "", q(m.descrizione), m.causale, q(eventoById(m.evento)?.nome || ""), q(CONTI[m.conto] || "")].join(";"));
+  return lines.join("\r\n");
+}
+function csvSoci() {
+  const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
+  return [["N.", "Cognome", "Nome", "Comune", "Ammissione", "Minorenne", "Quota " + anno].join(";"), ...S.soci.map(s => [s.numero, q(s.cognome), q(s.nome), q(s.comune), dIt(s.ammissione), s.minorenne ? "Sì" : "", s.quote?.[anno] ? "Pagata" : ""].join(";"))].join("\r\n");
+}
+
+// ---------- click ----------
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t || t.closest("dialog")) return;
+  if (t.id === "btn-logout") { await sb.auth.signOut(); login = { step: "email", email: "", msg: "" }; }
+  else if (t.id === "btn-new") openMov();
+  else if (t.dataset.edit) openMov(S.mov.find(m => m.id === t.dataset.edit));
+  else if (t.id === "btn-newev") openEv();
+  else if (t.dataset.editev) openEv(eventoById(t.dataset.editev));
+  else if (t.id === "btn-conti") openConti();
+  else if (t.id === "btn-newsocio") openSocio();
+  else if (t.dataset.socio) openSocio(S.soci.find(s => s.numero === Number(t.dataset.socio)));
+  else if (t.id === "btn-newutente") openUtente();
+  else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
+  else if (t.id === "btn-csv") download(`Alkimia_prima_nota_${S.config?.anno || ""}.csv`, csvMov());
+  else if (t.id === "btn-csv-soci") download("Alkimia_soci.csv", csvSoci());
+  else if (t.dataset.quota) {
+    const s = S.soci.find(x => x.numero === Number(t.dataset.quota)); if (!s) return;
+    const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
+    const quote = { ...(s.quote || {}), [anno]: !(s.quote?.[anno] === true) };
+    t.disabled = true;
+    const { error } = await sb.from("soci").update({ quote }).eq("numero", s.numero);
+    if (error) { S.error = errMsg(error); render(); return; }
+    loadAll();
+  }
+});
+window.addEventListener("hashchange", render);
+
+// ---------- avvio ----------
+let started = false;
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "SIGNED_OUT") {
+    if (event === "SIGNED_IN" && started && S.session?.user?.id === session?.user?.id) return;
+    started = true;
+    setTimeout(() => start(session), 0);
+  }
+});
+})();
+</script>
+</body>
+</html>
