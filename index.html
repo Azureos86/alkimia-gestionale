@@ -126,6 +126,9 @@ dialog { overflow-x: hidden; }
 .ev-card > summary::-webkit-details-marker { display: none; }
 .ev-card > summary .toggle { color: var(--accent); font-size: 13px; font-weight: 500; }
 .ev-card[open] > summary .toggle .apri, .ev-card:not([open]) > summary .toggle .chiudi { display: none; }
+button.link.nome { color: var(--ink); font-weight: 500; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+button.link.nome:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.p-anni td, .p-anni th { padding: 6px 8px; }
 .ev-body { display: grid; gap: 12px; margin-top: 12px; }
 .login form { display: grid; gap: 12px; }
 .userbox { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
@@ -264,6 +267,27 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
       <button type="button" class="danger left" id="tess-del" hidden>Elimina tessera</button>
       <button type="button" data-close>Annulla</button>
       <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-persona">
+  <form id="form-persona" method="dialog">
+    <div class="panel-head"><h2 id="p-nome"></h2><span id="p-socio"></span></div>
+    <div class="form-grid">
+      <label for="p-email">Email<input id="p-email" type="email" maxlength="200"></label>
+      <label for="p-tel">Telefono<input id="p-tel" type="tel" maxlength="40"></label>
+      <label class="check" for="p-wa"><input id="p-wa" type="checkbox"> Nel gruppo WhatsApp</label>
+      <label class="check" for="p-privacy"><input id="p-privacy" type="checkbox"> Consenso privacy firmato</label>
+      <label for="p-socio-sel" class="full" id="p-socio-l">Collegata al socio<select id="p-socio-sel"></select></label>
+      <label for="p-note" class="full">Note<input id="p-note" type="text" maxlength="300"></label>
+    </div>
+    <h3>Tessere</h3>
+    <div class="scroll"><table class="p-anni"><tbody id="p-anni"></tbody></table></div>
+    <p class="err" id="persona-err"></p>
+    <div class="actions">
+      <button type="button" data-close>Chiudi</button>
+      <button type="submit" class="primary" id="p-save">Salva contatti</button>
     </div>
   </form>
 </dialog>
@@ -652,21 +676,19 @@ function vTessere() {
     const rows = nonRinnovati.filter(match);
     body = `<p class="muted">${rows.length} persone avevano la tessera ${anno - 1} e non ancora la ${anno}.</p>
     <div class="scroll"><table><thead><tr><th>Persona</th><th>Email</th><th>Telefono</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
-    ${rows.map(p => `<tr><td>${esc(nomeP(p))}${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td><td>${esc(p.email || "")}</td><td>${esc(p.telefono || "")}</td>${w ? `<td><button class="link" data-rinnova="${esc(p.id)}">Registra tessera ${anno}</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
+    ${rows.map(p => `<tr><td><button class="link nome" data-persona="${esc(p.id)}">${esc(nomeP(p))}</button>${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td><td>${esc(p.email || "")}</td><td>${esc(p.telefono || "")}</td>${w ? `<td><button class="link" data-rinnova="${esc(p.id)}">Registra tessera ${anno}</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
   } else {
     const rows = cur.filter(t => tf.vista !== "da_pagare" || t.stato === "da_pagare").map(t => ({ t, p: personaById(t.tesserato_id) })).filter(x => match(x.p))
       .sort((a, b) => (a.t.numero ?? 9999) - (b.t.numero ?? 9999) || nomeP(a.p).localeCompare(nomeP(b.p)));
     body = rows.length ? `<div class="scroll"><table><thead><tr><th class="n">N.</th><th>Persona</th><th>Email</th><th>Telefono</th><th>Stato</th><th class="n">Importo</th><th>Pagata il</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
-    ${rows.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td>${esc(nomeP(p))}${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
+    ${rows.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td><button class="link nome" data-persona="${esc(t.tesserato_id)}">${esc(nomeP(p))}</button>${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
       <td>${esc(p?.email || "")}</td><td>${esc(p?.telefono || "")}</td>
       <td>${t.stato === "pagata" ? `<span class="chip ok">Pagata</span>` : t.stato === "onoraria" ? `<span class="chip">Onoraria</span>` : `<span class="chip ko">Da pagare</span>`}</td>
       <td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td class="muted">${dIt(t.data_pagamento)}</td>
       ${w ? `<td><button class="link" data-tessera="${esc(t.id)}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`
       : `<p class="muted">Nessuna tessera ${anno} ${q || tf.vista !== "tutte" ? "con questi filtri" : "registrata"}.</p>`;
   }
-  const storico = [...anni].sort((a, b) => a - b);
-  const persone = [...S.tesserati].filter(match);
-  const have = new Set(S.tessere.map(t => t.tesserato_id + ":" + t.anno));
+  const altre = q ? S.tesserati.filter(p => match(p) && !curIds.has(p.id)) : [];
   return `<section class="panel">
     <div class="panel-head"><h2>Tessere ${anno}</h2>
       <div class="actions"><button id="btn-csv-tess">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newtess">Registra tessera ${annoNuovo()}</button>` : ""}</div></div>
@@ -676,12 +698,11 @@ function vTessere() {
       <label for="tf-vista">Mostra<select id="tf-vista"><option value="tutte" ${tf.vista === "tutte" ? "selected" : ""}>Tutte le tessere</option><option value="da_pagare" ${tf.vista === "da_pagare" ? "selected" : ""}>Solo da pagare</option><option value="non_rinnovati" ${tf.vista === "non_rinnovati" ? "selected" : ""}>Non rinnovati dal ${anno - 1}</option></select></label>
       <label for="tf-q">Cerca<input id="tf-q" type="search" value="${esc(tf.q)}" placeholder="nome o email"></label>
     </div>
+    <p class="muted">Clicca un nome per aprire la scheda della persona con tutte le sue tessere.</p>
     ${body}
-  </section>
-  <section class="panel"><details><summary><strong>Storico per persona</strong> <span class="muted">· ${persone.length} persone</span></summary>
-    <div class="scroll"><table><thead><tr><th>Persona</th>${storico.map(a => `<th class="n">${a}</th>`).join("")}</tr></thead><tbody>
-    ${persone.map(p => `<tr><td>${esc(nomeP(p))}${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td>${storico.map(a => `<td class="n">${have.has(p.id + ":" + a) ? "✓" : `<span class="muted">·</span>`}</td>`).join("")}</tr>`).join("")}
-    </tbody></table></div></details></section>`;
+    ${altre.length && tf.vista !== "non_rinnovati" ? `<h3>Altre persone trovate, senza tessera ${anno}</h3>
+    <div class="scroll"><table><tbody>${altre.map(p => { const ult = Math.max(...S.tessere.filter(t => t.tesserato_id === p.id).map(t => t.anno)); return `<tr><td><button class="link nome" data-persona="${esc(p.id)}">${esc(nomeP(p))}</button>${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td><td class="muted">${isFinite(ult) ? "ultima tessera " + ult : "nessuna tessera"}</td><td>${esc(p.email || "")}</td></tr>`; }).join("")}</tbody></table></div>` : ""}
+  </section>`;
 }
 function bindTessere() {
   const v = $("tf-vista"), q = $("tf-q");
@@ -911,6 +932,43 @@ $("form-tess").addEventListener("submit", async e => {
   $("dlg-tess").close(); loadAll();
 });
 
+// ---------- dialog: scheda persona ----------
+let edScheda = null;
+function openPersona(id) {
+  const p = personaById(id); if (!p) return;
+  edScheda = p;
+  const w = W("tessere");
+  $("p-nome").textContent = nomeP(p);
+  const socio = S.soci.find(s => s.numero === p.socio_numero);
+  $("p-socio").innerHTML = p.socio_numero ? `<span class="chip">Socio n. ${p.socio_numero}</span>` : "";
+  $("p-email").value = p.email || ""; $("p-tel").value = p.telefono || "";
+  $("p-wa").checked = !!p.whatsapp; $("p-privacy").checked = !!p.privacy; $("p-note").value = p.note || "";
+  $("p-socio-sel").innerHTML = `<option value="">Non è socio</option>` + S.soci.map(s => `<option value="${s.numero}" ${s.numero === p.socio_numero ? "selected" : ""}>${s.numero} · ${esc(s.cognome)} ${esc(s.nome)}</option>`).join("");
+  $("p-socio-l").hidden = !R("soci");
+  ["p-email", "p-tel", "p-wa", "p-privacy", "p-note", "p-socio-sel"].forEach(k => $(k).disabled = !w);
+  $("p-save").hidden = !w;
+  const mie = S.tessere.filter(t => t.tesserato_id === p.id);
+  const primo = Math.min(...S.tessere.map(t => t.anno), annoNuovo());
+  const anni = []; for (let a = annoNuovo(); a >= primo; a--) anni.push(a);
+  $("p-anni").innerHTML = anni.map(a => { const t = mie.find(x => x.anno === a); return `<tr><th>${a}</th>${t ? `<td>${t.stato === "pagata" ? `<span class="chip ok">Pagata</span>` : t.stato === "onoraria" ? `<span class="chip">Onoraria</span>` : `<span class="chip ko">Da pagare</span>`}</td><td class="muted">${t.numero ? "n. " + t.numero : ""}</td><td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td>${w ? `<button type="button" class="link" data-p-tess="${esc(t.id)}">Modifica</button>` : ""}</td>` : `<td class="muted">—</td><td></td><td></td><td>${w ? `<button type="button" class="link" data-p-reg="${a}">Registra tessera</button>` : ""}</td>`}</tr>`; }).join("");
+  $("persona-err").textContent = "";
+  $("dlg-persona").showModal();
+}
+$("p-anni").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const p = edScheda; $("dlg-persona").close();
+  if (b.dataset.pTess) openTess(S.tessere.find(t => t.id === b.dataset.pTess));
+  else if (b.dataset.pReg) openTess(null, p, Number(b.dataset.pReg));
+});
+$("form-persona").addEventListener("submit", async e => {
+  e.preventDefault();
+  const row = { email: $("p-email").value.trim().toLowerCase() || null, telefono: $("p-tel").value.trim() || null, whatsapp: $("p-wa").checked, privacy: $("p-privacy").checked, note: $("p-note").value.trim() };
+  if (R("soci")) row.socio_numero = $("p-socio-sel").value ? Number($("p-socio-sel").value) : null;
+  const { error } = await sb.from("tesserati").update(row).eq("id", edScheda.id);
+  if (error) { $("persona-err").textContent = errMsg(error); return; }
+  $("dlg-persona").close(); loadAll();
+});
+
 // ---------- dialog: utente ----------
 let edUt = null, armUt = false;
 function openUtente(u) {
@@ -984,6 +1042,7 @@ document.addEventListener("click", async e => {
   else if (t.id === "btn-csv-tess") download(`Alkimia_tessere_${annoSel()}.csv`, csvTessere());
   else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
   else if (t.dataset.tessera) openTess(S.tessere.find(x => x.id === t.dataset.tessera));
+  else if (t.dataset.persona) openPersona(t.dataset.persona);
   else if (t.dataset.rinnova) openTess(null, personaById(t.dataset.rinnova), annoSel());
 });
 window.addEventListener("hashchange", render);
