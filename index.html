@@ -217,6 +217,45 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
   </form>
 </dialog>
 
+<dialog id="dlg-tess">
+  <form id="form-tess" method="dialog">
+    <h2 id="tess-title">Registra tessera</h2>
+    <fieldset id="t-chi" style="border:0;padding:0;margin:0;display:grid;gap:8px">
+      <div class="check"><label class="check" for="t-mode-old"><input type="radio" name="t-mode" id="t-mode-old" value="old" checked> Persona già registrata</label>
+      <label class="check" for="t-mode-new"><input type="radio" name="t-mode" id="t-mode-new" value="new"> Nuova persona</label></div>
+      <label for="t-persona" id="t-persona-l">Persona<input id="t-persona" list="t-persone" placeholder="Scrivi cognome o nome" autocomplete="off"></label>
+      <datalist id="t-persone"></datalist>
+      <div class="form-grid" id="t-new" hidden>
+        <label for="t-cognome">Cognome<input id="t-cognome" type="text" maxlength="80"></label>
+        <label for="t-nome">Nome<input id="t-nome" type="text" maxlength="80"></label>
+      </div>
+    </fieldset>
+    <p id="t-chi-fisso" hidden></p>
+    <div class="form-grid">
+      <label for="t-email">Email<input id="t-email" type="email" maxlength="200"></label>
+      <label for="t-tel">Telefono<input id="t-tel" type="tel" maxlength="40"></label>
+      <label class="check" for="t-wa"><input id="t-wa" type="checkbox"> Nel gruppo WhatsApp</label>
+      <label class="check" for="t-privacy"><input id="t-privacy" type="checkbox"> Consenso privacy firmato</label>
+      <label for="t-socio" class="full" id="t-socio-l">Collegata al socio<select id="t-socio"></select></label>
+    </div>
+    <h3>Tessera</h3>
+    <div class="form-grid">
+      <label for="t-anno">Anno di validità<input id="t-anno" type="number" min="2000" max="2100" required></label>
+      <label for="t-numero">Numero tessera<input id="t-numero" type="number" min="1"></label>
+      <label for="t-stato">Stato<select id="t-stato"><option value="pagata">Pagata</option><option value="da_pagare">Da pagare</option><option value="onoraria">Onoraria</option></select></label>
+      <label for="t-importo">Importo (€)<input id="t-importo" type="number" step="0.01" min="0"></label>
+      <label for="t-data">Pagata il<input id="t-data" type="date"></label>
+      <label for="t-note" class="full">Note<input id="t-note" type="text" maxlength="300"></label>
+    </div>
+    <p class="err" id="tess-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="tess-del" hidden>Elimina tessera</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog id="dlg-utente">
   <form id="form-utente" method="dialog">
     <h2 id="utente-title">Nuovo utente</h2>
@@ -251,10 +290,10 @@ const PIANO = {
 };
 const CONTI = { cc: "Conto corrente", contanti: "Contanti", prepagata: "Prepagata", paypal: "PayPal" };
 const MESI = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
-const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", soci: "Soci" };
+const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", tessere: "Tessere", soci: "Soci" };
 const LIVELLI = { none: "Nessun accesso", read: "Sola lettura", write: "Lettura e scrittura" };
 
-const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, config: null, soci: [], utenti: [], registro: [], error: "", loading: false };
+const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, config: null, soci: [], tesserati: [], tessere: [], utenti: [], registro: [], error: "", loading: false };
 const filt = { q: "", causale: "", evento: "", mese: "" };
 let login = { step: "email", email: "", msg: "" };
 
@@ -289,6 +328,10 @@ async function loadAll() {
   if (R("eventi") || R("prima_nota")) jobs.push(sb.from("eventi").select("*").then(r => { if (r.error) throw r.error; S.eventi = r.data; }));
   if (R("rendiconto") || R("prima_nota")) jobs.push(sb.rpc("riepilogo").then(r => { if (r.error) throw r.error; S.riep = r.data; }));
   if (R("eventi")) jobs.push(sb.rpc("consuntivo_eventi").then(r => { if (r.error) throw r.error; S.cons = r.data.map(x => ({ ...x, totale: Number(x.totale) })); }));
+  if (R("tessere")) {
+    jobs.push(sb.from("tesserati").select("*").order("cognome").order("nome").then(r => { if (r.error) throw r.error; S.tesserati = r.data; }));
+    jobs.push(sb.from("tessere").select("*").order("anno").order("numero").then(r => { if (r.error) throw r.error; S.tessere = r.data.map(t => ({ ...t, importo: t.importo == null ? null : Number(t.importo) })); }));
+  }
   if (R("soci")) jobs.push(sb.from("soci").select("*").order("numero").then(r => { if (r.error) throw r.error; S.soci = r.data; }));
   if (S.me?.is_admin) {
     jobs.push(sb.from("utenti").select("*").order("email").then(r => { if (r.error) throw r.error; S.utenti = r.data; }));
@@ -333,6 +376,7 @@ function views() {
   if (R("rendiconto")) v.push(["cruscotto", "Cruscotto"]);
   if (R("prima_nota")) v.push(["movimenti", "Prima nota"]);
   if (R("eventi")) v.push(["eventi", "Eventi"]);
+  if (R("tessere")) v.push(["tessere", "Tessere"]);
   if (R("rendiconto")) v.push(["rendiconto", "Rendiconto"]);
   if (R("soci")) v.push(["soci", "Soci"]);
   if (S.me?.is_admin) v.push(["utenti", "Utenti"], ["registro", "Registro modifiche"]);
@@ -349,9 +393,10 @@ function render() {
   $("nav").innerHTML = vs.map(([k, n]) => `<a href="#${k}" ${k === v ? 'aria-current="page"' : ""}>${n}</a>`).join("");
   let html = S.error ? `<p class="notice bad">${esc(S.error)}</p>` : "";
   if (!v) { app.innerHTML = html + `<section class="panel"><p>Il tuo utente non ha ancora moduli abilitati.</p></section>`; return; }
-  html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, utenti: vUtenti, registro: vRegistro })[v]();
+  html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, tessere: vTessere, utenti: vUtenti, registro: vRegistro })[v]();
   app.innerHTML = html;
   if (v === "movimenti") bindFilters();
+  if (v === "tessere") bindTessere();
 }
 
 // ---------- login ----------
@@ -538,18 +583,85 @@ function vRendiconto() {
 
 function vSoci() {
   const w = W("soci");
-  const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
-  const pagate = S.soci.filter(s => s.quote?.[anno] === true).length;
   return `<section class="panel">
     <div class="panel-head"><h2>Libro soci</h2><div class="actions"><button id="btn-csv-soci">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newsocio">Nuovo socio</button>` : ""}</div></div>
-    <div class="kv"><div><span>Soci iscritti</span><span>${S.soci.length}</span></div><div><span>Quota ${anno} registrata</span><span>${pagate} su ${S.soci.length}</span></div></div>
+    <div class="kv"><div><span>Soci iscritti</span><span>${S.soci.length}</span></div></div>
     <div class="scroll"><table>
-      <thead><tr><th class="n">N.</th><th>Socio</th><th>Comune</th><th>Ammissione</th><th>Note</th><th>Quota ${anno}</th>${w ? "<th></th>" : ""}</tr></thead>
-      <tbody>${S.soci.map(s => { const ok = s.quote?.[anno] === true; return `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td><td>${s.minorenne ? `<span class="chip wa">Minorenne</span>` : ""}</td>
-        <td>${w ? `<button class="link" data-quota="${s.numero}" aria-pressed="${ok}">${ok ? `<span class="chip ok">Pagata</span>` : "Segna pagata"}</button>` : ok ? `<span class="chip ok">Pagata</span>` : `<span class="muted">—</span>`}</td>
-        ${w ? `<td><button class="link" data-socio="${s.numero}">Modifica</button></td>` : ""}</tr>`; }).join("")}</tbody>
+      <thead><tr><th class="n">N.</th><th>Socio</th><th>Comune</th><th>Ammissione</th>${w ? "<th></th>" : ""}</tr></thead>
+      <tbody>${S.soci.map(s => `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td>
+        ${w ? `<td><button class="link" data-socio="${s.numero}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody>
     </table></div>
   </section>`;
+}
+
+// ---------- tessere ----------
+const STATI = { pagata: "Pagata", da_pagare: "Da pagare", onoraria: "Onoraria" };
+const annoNuovo = () => new Date().getFullYear() + 1;
+const tf = { anno: null, q: "", vista: "tutte" };
+function anniTessere() { return [...new Set([...S.tessere.map(t => t.anno), annoNuovo()])].sort((a, b) => b - a); }
+function annoSel() {
+  if (tf.anno) return tf.anno;
+  if (S.tessere.some(t => t.anno === annoNuovo())) return annoNuovo();
+  return Math.max(...S.tessere.map(t => t.anno), annoNuovo() - 1);
+}
+const personaById = id => S.tesserati.find(p => p.id === id);
+const nomeP = p => p ? `${p.cognome} ${p.nome}` : "";
+function vTessere() {
+  const w = W("tessere"), anno = annoSel();
+  const anni = anniTessere();
+  const cur = S.tessere.filter(t => t.anno === anno);
+  const curIds = new Set(cur.map(t => t.tesserato_id));
+  const prevIds = new Set(S.tessere.filter(t => t.anno === anno - 1).map(t => t.tesserato_id));
+  const rinnovi = cur.filter(t => prevIds.has(t.tesserato_id)).length;
+  const nonRinnovati = [...prevIds].filter(id => !curIds.has(id)).map(personaById).filter(Boolean).sort((a, b) => nomeP(a).localeCompare(nomeP(b)));
+  const cnt = st => cur.filter(t => t.stato === st).length;
+  const soci = cur.filter(t => personaById(t.tesserato_id)?.socio_numero).length;
+  const incassato = r2(cur.reduce((s, t) => s + (t.stato === "pagata" && t.importo ? t.importo : 0), 0));
+  const q = tf.q.trim().toLowerCase();
+  const match = p => !q || nomeP(p).toLowerCase().includes(q) || (p?.email || "").toLowerCase().includes(q);
+  let body;
+  if (tf.vista === "non_rinnovati") {
+    const rows = nonRinnovati.filter(match);
+    body = `<p class="muted">${rows.length} persone avevano la tessera ${anno - 1} e non ancora la ${anno}.</p>
+    <div class="scroll"><table><thead><tr><th>Persona</th><th>Email</th><th>Telefono</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
+    ${rows.map(p => `<tr><td>${esc(nomeP(p))}${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td><td>${esc(p.email || "")}</td><td>${esc(p.telefono || "")}</td>${w ? `<td><button class="link" data-rinnova="${esc(p.id)}">Registra tessera ${anno}</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
+  } else {
+    const rows = cur.filter(t => tf.vista !== "da_pagare" || t.stato === "da_pagare").map(t => ({ t, p: personaById(t.tesserato_id) })).filter(x => match(x.p))
+      .sort((a, b) => (a.t.numero ?? 9999) - (b.t.numero ?? 9999) || nomeP(a.p).localeCompare(nomeP(b.p)));
+    body = rows.length ? `<div class="scroll"><table><thead><tr><th class="n">N.</th><th>Persona</th><th>Email</th><th>Telefono</th><th>Stato</th><th class="n">Importo</th><th>Pagata il</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
+    ${rows.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td>${esc(nomeP(p))}${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
+      <td>${esc(p?.email || "")}</td><td>${esc(p?.telefono || "")}</td>
+      <td>${t.stato === "pagata" ? `<span class="chip ok">Pagata</span>` : t.stato === "onoraria" ? `<span class="chip">Onoraria</span>` : `<span class="chip ko">Da pagare</span>`}</td>
+      <td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td class="muted">${dIt(t.data_pagamento)}</td>
+      ${w ? `<td><button class="link" data-tessera="${esc(t.id)}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`
+      : `<p class="muted">Nessuna tessera ${anno} ${q || tf.vista !== "tutte" ? "con questi filtri" : "registrata"}.</p>`;
+  }
+  const storico = [...anni].sort((a, b) => a - b);
+  const persone = [...S.tesserati].filter(match);
+  const have = new Set(S.tessere.map(t => t.tesserato_id + ":" + t.anno));
+  return `<section class="panel">
+    <div class="panel-head"><h2>Tessere ${anno}</h2>
+      <div class="actions"><button id="btn-csv-tess">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newtess">Registra tessera ${annoNuovo()}</button>` : ""}</div></div>
+    <p class="muted">La tessera si paga l'anno prima: a fine ${annoNuovo() - 1} si raccolgono le tessere ${annoNuovo()}. Possono averla anche i non soci.</p>
+    <div class="kv"><div><span>Tessere</span><span>${cur.length}</span></div><div><span>Pagate</span><span>${cnt("pagata")}</span></div><div><span>Da pagare</span><span class="${cnt("da_pagare") ? "neg" : ""}">${cnt("da_pagare")}</span></div><div><span>Onorarie</span><span>${cnt("onoraria")}</span></div><div><span>Di cui soci</span><span>${soci}</span></div><div><span>Rinnovi / nuovi</span><span>${rinnovi} / ${cur.length - rinnovi}</span></div><div><span>Non rinnovati</span><span>${nonRinnovati.length}</span></div>${incassato ? `<div><span>Incassato</span><span>${fmt(incassato)}</span></div>` : ""}</div>
+    <div class="filters">
+      <label for="tf-anno">Anno<select id="tf-anno">${anni.map(a => `<option ${a === anno ? "selected" : ""}>${a}</option>`).join("")}</select></label>
+      <label for="tf-vista">Mostra<select id="tf-vista"><option value="tutte" ${tf.vista === "tutte" ? "selected" : ""}>Tutte le tessere</option><option value="da_pagare" ${tf.vista === "da_pagare" ? "selected" : ""}>Solo da pagare</option><option value="non_rinnovati" ${tf.vista === "non_rinnovati" ? "selected" : ""}>Non rinnovati dal ${anno - 1}</option></select></label>
+      <label for="tf-q">Cerca<input id="tf-q" type="search" value="${esc(tf.q)}" placeholder="nome o email"></label>
+    </div>
+    ${body}
+  </section>
+  <section class="panel"><details><summary><strong>Storico per persona</strong> <span class="muted">· ${persone.length} persone</span></summary>
+    <div class="scroll"><table><thead><tr><th>Persona</th>${storico.map(a => `<th class="n">${a}</th>`).join("")}</tr></thead><tbody>
+    ${persone.map(p => `<tr><td>${esc(nomeP(p))}${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td>${storico.map(a => `<td class="n">${have.has(p.id + ":" + a) ? "✓" : `<span class="muted">·</span>`}</td>`).join("")}</tr>`).join("")}
+    </tbody></table></div></details></section>`;
+}
+function bindTessere() {
+  const a = $("tf-anno"), v = $("tf-vista"), q = $("tf-q");
+  if (!a) return;
+  a.addEventListener("change", () => { tf.anno = Number(a.value); render(); });
+  v.addEventListener("change", () => { tf.vista = v.value; render(); });
+  q.addEventListener("input", () => { tf.q = q.value; const pos = q.selectionStart; render(); const n = $("tf-q"); n.focus(); n.setSelectionRange(pos, pos); });
 }
 
 function vUtenti() {
@@ -569,8 +681,8 @@ function vUtenti() {
 
 function vRegistro() {
   const AZ = { INSERT: "Creato", UPDATE: "Modificato", DELETE: "Eliminato" };
-  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", config: "Saldi conti" };
-  const desc = r => { const d = r.dopo || r.prima || {}; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
+  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", config: "Saldi conti", tesserati: "Tesserati", tessere: "Tessere" };
+  const desc = r => { const d = r.dopo || r.prima || {}; if (r.tabella === "tessere") return `Tessera ${d.anno} · ${nomeP(personaById(d.tesserato_id)) || ""}`; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
   return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime 100 operazioni, con chi le ha fatte.</p>
     <div class="scroll"><table><thead><tr><th>Quando</th><th>Chi</th><th>Sezione</th><th>Operazione</th><th>Elemento</th></tr></thead>
     <tbody>${S.registro.map(r => `<tr><td class="muted">${new Date(r.ts).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(r.utente || "script iniziale")}</td><td>${TB[r.tabella] || esc(r.tabella)}</td><td>${AZ[r.azione] || esc(r.azione)}</td><td>${esc(desc(r))}</td></tr>`).join("")}</tbody></table></div></section>`;
@@ -693,6 +805,79 @@ $("form-socio").addEventListener("submit", async e => {
   $("dlg-socio").close(); loadAll();
 });
 
+// ---------- dialog: tessera ----------
+let edTess = null, edPers = null, armTess = false;
+const labelP = p => `${p.cognome} ${p.nome}${p.email ? " · " + p.email : ""}`;
+function fillContatti(p) {
+  $("t-email").value = p?.email || ""; $("t-tel").value = p?.telefono || "";
+  $("t-wa").checked = !!p?.whatsapp; $("t-privacy").checked = !!p?.privacy;
+  $("t-socio").value = p?.socio_numero ?? "";
+}
+function setMode(m) {
+  $("t-mode-" + m).checked = true;
+  $("t-new").hidden = m !== "new"; $("t-persona-l").hidden = m !== "old";
+}
+function openTess(t, persona, anno) {
+  edTess = t || null; armTess = false;
+  edPers = t ? personaById(t.tesserato_id) : persona || null;
+  const a = t?.anno ?? anno ?? annoNuovo();
+  $("tess-title").textContent = t ? "Modifica tessera" : "Registra tessera";
+  $("t-persone").innerHTML = S.tesserati.map(p => `<option value="${esc(labelP(p))}"></option>`).join("");
+  $("t-socio").innerHTML = `<option value="">Non è socio</option>` + S.soci.map(s => `<option value="${s.numero}">${s.numero} · ${esc(s.cognome)} ${esc(s.nome)}</option>`).join("");
+  $("t-socio-l").hidden = !R("soci");
+  $("t-chi").hidden = !!edPers; $("t-chi-fisso").hidden = !edPers;
+  $("t-chi-fisso").innerHTML = edPers ? `<strong>${esc(nomeP(edPers))}</strong>` : "";
+  setMode("old"); $("t-persona").value = ""; $("t-cognome").value = ""; $("t-nome").value = "";
+  fillContatti(edPers);
+  $("t-anno").value = a;
+  const maxN = Math.max(0, ...S.tessere.filter(x => x.anno === a).map(x => x.numero || 0));
+  $("t-numero").value = t ? (t.numero ?? "") : maxN + 1;
+  $("t-stato").value = t?.stato || "pagata";
+  $("t-importo").value = t ? (t.importo ?? "") : 15;
+  $("t-data").value = t ? (t.data_pagamento || "") : today();
+  $("t-note").value = t?.note || "";
+  $("tess-del").hidden = !t; $("tess-del").textContent = "Elimina tessera"; $("tess-err").textContent = "";
+  $("dlg-tess").showModal();
+}
+document.querySelectorAll('input[name="t-mode"]').forEach(r => r.addEventListener("change", () => setMode(r.value)));
+$("t-persona").addEventListener("change", () => { const p = S.tesserati.find(x => labelP(x) === $("t-persona").value); if (p) fillContatti(p); });
+$("t-anno").addEventListener("change", () => { if (edTess) return; const a = Number($("t-anno").value); $("t-numero").value = Math.max(0, ...S.tessere.filter(x => x.anno === a).map(x => x.numero || 0)) + 1; });
+$("tess-del").addEventListener("click", async () => {
+  if (!armTess) { armTess = true; $("tess-del").textContent = "Conferma eliminazione"; return; }
+  const { error } = await sb.from("tessere").delete().eq("id", edTess.id);
+  if (error) { $("tess-err").textContent = errMsg(error); return; }
+  $("dlg-tess").close(); loadAll();
+});
+$("form-tess").addEventListener("submit", async e => {
+  e.preventDefault();
+  const err = $("tess-err");
+  const contatti = { email: $("t-email").value.trim().toLowerCase() || null, telefono: $("t-tel").value.trim() || null, whatsapp: $("t-wa").checked, privacy: $("t-privacy").checked };
+  if (R("soci")) contatti.socio_numero = $("t-socio").value ? Number($("t-socio").value) : null;
+  let pid = edPers?.id;
+  if (!pid) {
+    if ($("t-mode-new").checked) {
+      const cognome = $("t-cognome").value.trim(), nome = $("t-nome").value.trim();
+      if (!cognome || !nome) { err.textContent = "Inserisci cognome e nome."; return; }
+      if (S.tesserati.some(p => p.cognome.toLowerCase() === cognome.toLowerCase() && p.nome.toLowerCase() === nome.toLowerCase())) { err.textContent = "Questa persona è già registrata: scegli \"Persona già registrata\"."; return; }
+      const { data, error } = await sb.from("tesserati").insert({ cognome, nome, ...contatti }).select("id").single();
+      if (error) { err.textContent = errMsg(error); return; }
+      pid = data.id;
+    } else {
+      const p = S.tesserati.find(x => labelP(x) === $("t-persona").value);
+      if (!p) { err.textContent = "Scegli una persona dall'elenco, oppure seleziona \"Nuova persona\"."; return; }
+      pid = p.id;
+    }
+  }
+  if (edPers || $("t-mode-old").checked) {
+    const { error } = await sb.from("tesserati").update(contatti).eq("id", pid);
+    if (error) { err.textContent = errMsg(error); return; }
+  }
+  const row = { tesserato_id: pid, anno: Number($("t-anno").value), numero: $("t-numero").value ? Number($("t-numero").value) : null, stato: $("t-stato").value, importo: $("t-importo").value === "" ? null : r2(Number($("t-importo").value)), data_pagamento: $("t-data").value || null, note: $("t-note").value.trim() };
+  const { error } = edTess ? await sb.from("tessere").update(row).eq("id", edTess.id) : await sb.from("tessere").insert(row);
+  if (error) { err.textContent = /duplicate key/i.test(error.message) ? `Questa persona ha già la tessera ${row.anno}.` : errMsg(error); return; }
+  $("dlg-tess").close(); loadAll();
+});
+
 // ---------- dialog: utente ----------
 let edUt = null, armUt = false;
 function openUtente(u) {
@@ -740,8 +925,12 @@ function csvMov() {
   return lines.join("\r\n");
 }
 function csvSoci() {
-  const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
-  return [["N.", "Cognome", "Nome", "Comune", "Ammissione", "Minorenne", "Quota " + anno].join(";"), ...S.soci.map(s => [s.numero, q(s.cognome), q(s.nome), q(s.comune), dIt(s.ammissione), s.minorenne ? "Sì" : "", s.quote?.[anno] ? "Pagata" : ""].join(";"))].join("\r\n");
+  return [["N.", "Cognome", "Nome", "Comune", "Ammissione"].join(";"), ...S.soci.map(s => [s.numero, q(s.cognome), q(s.nome), q(s.comune), dIt(s.ammissione)].join(";"))].join("\r\n");
+}
+function csvTessere() {
+  const anno = annoSel();
+  return [["N.", "Cognome", "Nome", "Email", "Telefono", "Socio", "Stato", "Importo", "Pagata il", "Note"].join(";"),
+    ...S.tessere.filter(t => t.anno === anno).sort((a, b) => (a.numero ?? 9999) - (b.numero ?? 9999)).map(t => { const p = personaById(t.tesserato_id) || {}; return [t.numero ?? "", q(p.cognome), q(p.nome), q(p.email), q(p.telefono), p.socio_numero ? "Sì" : "", STATI[t.stato], n(t.importo), dIt(t.data_pagamento), q(t.note)].join(";"); })].join("\r\n");
 }
 
 // ---------- click ----------
@@ -759,15 +948,10 @@ document.addEventListener("click", async e => {
   else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
   else if (t.id === "btn-csv") download(`Alkimia_prima_nota_${S.config?.anno || ""}.csv`, csvMov());
   else if (t.id === "btn-csv-soci") download("Alkimia_soci.csv", csvSoci());
-  else if (t.dataset.quota) {
-    const s = S.soci.find(x => x.numero === Number(t.dataset.quota)); if (!s) return;
-    const anno = String(S.config?.anno || S.riep?.anno || new Date().getFullYear());
-    const quote = { ...(s.quote || {}), [anno]: !(s.quote?.[anno] === true) };
-    t.disabled = true;
-    const { error } = await sb.from("soci").update({ quote }).eq("numero", s.numero);
-    if (error) { S.error = errMsg(error); render(); return; }
-    loadAll();
-  }
+  else if (t.id === "btn-csv-tess") download(`Alkimia_tessere_${annoSel()}.csv`, csvTessere());
+  else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
+  else if (t.dataset.tessera) openTess(S.tessere.find(x => x.id === t.dataset.tessera));
+  else if (t.dataset.rinnova) openTess(null, personaById(t.dataset.rinnova), annoSel());
 });
 window.addEventListener("hashchange", render);
 
