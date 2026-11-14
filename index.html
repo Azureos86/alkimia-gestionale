@@ -489,7 +489,8 @@ function vCruscotto() {
   const evs = eventiAnno().sort((a, b) => (a.data || "").localeCompare(b.data || ""));
   const prossimo = R("eventi") ? (evs.find(e => (e.data || "") >= today()) || evs[evs.length - 1]) : null;
   const ultimi = R("prima_nota") ? [...S.mov].slice(-6).reverse() : [];
-  return `<div class="tiles">
+  return `<div class="panel-head"><h2>Cruscotto ${ANNO}</h2><button data-stampa="cruscotto">Stampa (Excel)</button></div>
+  <div class="tiles">
     <div class="tile"><span class="label">Saldo di cassa calcolato</span><span class="value">${fmt(cassa)}</span><span class="muted">saldo iniziale ${fmt(saldoIniziale())}</span></div>
     <div class="tile"><span class="label">Proventi ${esc(r.anno || "")}</span><span class="value pos">${fmt(E)}</span></div>
     <div class="tile"><span class="label">Oneri ${esc(r.anno || "")}</span><span class="value neg">${fmt(U)}</span></div>
@@ -557,7 +558,7 @@ function vMovimenti() {
   const anyF = filt.q || filt.causale || filt.evento || filt.mese;
   return `<section class="panel">
     <div class="panel-head"><h2>Prima nota ${ANNO}</h2>
-      <div class="actions"><button id="btn-csv">Esporta per Excel</button>${w ? `<button class="primary" id="btn-new">Nuovo movimento</button>` : ""}</div></div>
+      <div class="actions"><button data-stampa="movimenti">Stampa (Excel)</button>${w ? `<button class="primary" id="btn-new">Nuovo movimento</button>` : ""}</div></div>
     <div class="filters">
       <label for="f-q">Cerca<input id="f-q" type="search" value="${esc(filt.q)}" placeholder="descrizione"></label>
       <label for="f-c">Causale<select id="f-c"><option value="">Tutte</option><option value="-" ${filt.causale === "-" ? "selected" : ""}>Da classificare</option>${Object.keys(PIANO).map(k => `<option ${filt.causale === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
@@ -623,7 +624,7 @@ function vRendiconto() {
   const row = k => `<tr><td><span class="chip ${k[0] === "B" ? "b" : ""}">${k}</span></td><td>${PIANO[k]}</td><td class="n">${fmt(pc[k])}</td></tr>`;
   const A = Object.keys(PIANO).filter(k => k[0] === "A"), B = Object.keys(PIANO).filter(k => k[0] === "B");
   return `<section class="panel">
-    <div class="panel-head"><h2>Rendiconto per cassa ${esc(r.anno || "")}</h2><span class="muted">${ANNO === new Date().getFullYear() ? "dal 01/01 a oggi" : "01/01 – 31/12"}</span></div>
+    <div class="panel-head"><h2>Rendiconto per cassa ${esc(r.anno || "")}</h2><div class="actions"><span class="muted">${ANNO === new Date().getFullYear() ? "dal 01/01 a oggi" : "01/01 – 31/12"}</span><button data-stampa="rendiconto">Stampa (Excel)</button></div></div>
     <div class="grid2">
       <div class="scroll"><table><thead><tr><th colspan="2">Proventi</th><th class="n">Importo</th></tr></thead><tbody>${A.map(row).join("")}<tr class="total"><td></td><td>Totale proventi</td><td class="n">${fmt(E)}</td></tr></tbody></table></div>
       <div class="scroll"><table><thead><tr><th colspan="2">Oneri</th><th class="n">Importo</th></tr></thead><tbody>${B.map(row).join("")}<tr class="total"><td></td><td>Totale oneri</td><td class="n">${fmt(U)}</td></tr></tbody></table></div>
@@ -1023,6 +1024,249 @@ $("form-utente").addEventListener("submit", async e => {
 
 document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
 
+// ---------- stampe Excel ----------
+// Gestionale Alkimia — export Excel pronto per la stampa (Rendiconto, Movimenti, Cruscotto)
+function buildWorkbook(ExcelJS, d, focus) {
+  const C = { brown: "FF8A6420", ink: "FF1E1E1E", grey: "FF6B6B6B", line: "FFD9D6CF", band: "FFF1EFEA", green: "FF2E6B34", red: "FFA63A2A", redBar: "FF9A3324", greenBar: "FF2E6B34", white: "FFFFFFFF" };
+  const F = (o = {}) => ({ name: "Arial", size: 10, color: { argb: C.ink }, ...o });
+  const NUM = "#,##0.00";
+  const MESI = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+  const dIt = iso => iso.split("-").reverse().join("/");
+  const anno = d.anno, alData = d.alData; // "dd/mm/yyyy"
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Gestionale Alkimia"; wb.created = new Date();
+  const fill = argb => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
+  const bottom = (argb = C.line, style = "thin") => ({ bottom: { style, color: { argb } } });
+
+  function setup(ws, titoloPagina, widths, lastCol) {
+    ws.columns = widths.map(w => ({ width: w }));
+    ws.views = [{ showGridLines: false }];
+    ws.pageSetup = { paperSize: 9, orientation: "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0, horizontalCentered: true,
+      margins: { left: 0.5, right: 0.5, top: 0.75, bottom: 0.7, header: 0.3, footer: 0.3 } };
+    ws.headerFooter = {
+      oddHeader: `&L&"Arial"&8&K6B6B6BASSOCIAZIONE CULTURALE ALKIMIA&R&"Arial"&8&K6B6B6B${titoloPagina} — esercizio ${anno}`,
+      oddFooter: `&L&"Arial"&8&K6B6B6BDocumento generato il ${d.oggi}&R&"Arial"&8&K6B6B6BPagina &P di &N`
+    };
+    ws.getCell("A1").value = "ASSOCIAZIONE CULTURALE ALKIMIA";
+    ws.getCell("A1").font = F({ bold: true, size: 9, color: { argb: C.brown } });
+    return lastCol;
+  }
+  function titolo(ws, row, testo, sotto, lastCol) {
+    ws.getCell(`A${row}`).value = testo; ws.getCell(`A${row}`).font = F({ bold: true, size: 18 });
+    ws.getRow(row).height = 26;
+    ws.getCell(`A${row + 1}`).value = sotto; ws.getCell(`A${row + 1}`).font = F({ size: 10, color: { argb: C.grey } });
+    for (let c = 1; c <= lastCol; c++) ws.getCell(row + 2, c).border = bottom(C.brown, "medium");
+    ws.getRow(row + 2).height = 6;
+  }
+  function header(ws, row, labels, rightFrom) {
+    labels.forEach((l, i) => {
+      const c = ws.getCell(row, i + 1);
+      c.value = l; c.font = F({ bold: true, size: 9, color: { argb: C.white } }); c.fill = fill(C.ink);
+      c.alignment = { vertical: "middle", horizontal: i + 1 >= rightFrom ? "right" : "left" };
+    });
+    ws.getRow(row).height = 20;
+  }
+  function section(ws, row, testo) {
+    ws.getCell(`A${row}`).value = testo; ws.getCell(`A${row}`).font = F({ bold: true, size: 12 });
+    ws.getRow(row).height = 22;
+  }
+  function money(c, v, color, bold = false, fmt = NUM) {
+    c.value = v; c.numFmt = fmt; c.font = F({ color: { argb: color || C.ink }, bold }); c.alignment = { horizontal: "right" };
+  }
+
+  // ---------------- Movimenti ----------------
+  let wsM = null, mRef = null;
+  if (d.hasMov) {
+    wsM = wb.addWorksheet("Movimenti");
+    setup(wsM, "Registro movimenti", [12, 46, 7, 13, 13, 14, 6], 6);
+    titolo(wsM, 2, "Registro dei movimenti di cassa", `Periodo dal 01/01/${anno} al ${alData} — ${d.mov.length} movimenti registrati`, 6);
+    header(wsM, 5, ["Data", "Descrizione", "Cod.", "Entrate", "Uscite", "Saldo"], 4);
+    wsM.getCell("C5").alignment = { horizontal: "left", vertical: "middle" };
+    let r = 6;
+    const dateCell = (c, iso) => { const [y, m, dd] = iso.split("-").map(Number); c.value = new Date(Date.UTC(y, m - 1, dd)); c.numFmt = "dd/mm/yyyy"; };
+    dateCell(wsM.getCell(`A${r}`), `${anno}-01-01`);
+    wsM.getCell(`B${r}`).value = `Saldo iniziale al 1° gennaio ${anno}`;
+    ["A", "B"].forEach(k => wsM.getCell(`${k}${r}`).font = F({ bold: true }));
+    money(wsM.getCell(`F${r}`), d.saldoIniziale, C.ink, true);
+    for (let c = 1; c <= 6; c++) wsM.getCell(r, c).border = bottom();
+    const saldoRow = r; let lastSaldo = r, firstMov = null, mese = "";
+    for (const m of d.mov) {
+      const key = m.data.slice(0, 7);
+      if (key !== mese) {
+        mese = key; r++;
+        wsM.mergeCells(`A${r}:F${r}`);
+        const c = wsM.getCell(`A${r}`);
+        c.value = `${MESI[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`;
+        c.font = F({ bold: true, color: { argb: C.brown } }); c.fill = fill(C.band);
+        wsM.getRow(r).height = 20; c.alignment = { vertical: "middle" };
+      }
+      r++; if (!firstMov) firstMov = r;
+      dateCell(wsM.getCell(`A${r}`), m.data);
+      const b = wsM.getCell(`B${r}`); b.value = m.descrizione; b.font = F(); b.alignment = { wrapText: true, vertical: "top" };
+      const cc = wsM.getCell(`C${r}`); cc.value = m.causale || ""; cc.font = F();
+      if (m.tipo === "E") money(wsM.getCell(`D${r}`), m.importo, C.green); else money(wsM.getCell(`E${r}`), m.importo, C.red);
+      money(wsM.getCell(`F${r}`), { formula: `F${lastSaldo}+N(D${r})-N(E${r})` }, C.ink);
+      const g = wsM.getCell(`G${r}`); g.value = { formula: `IF(ISNUMBER(A${r}),MONTH(A${r}),"")` }; g.font = F({ size: 8, color: { argb: C.grey } });
+      wsM.getCell(`A${r}`).font = F();
+      for (let c = 1; c <= 6; c++) { wsM.getCell(r, c).border = bottom(); if (c !== 2) wsM.getCell(r, c).alignment = { ...(wsM.getCell(r, c).alignment || {}), vertical: "top" }; }
+      lastSaldo = r;
+    }
+    const lastMov = r; r++;
+    const tot = r;
+    wsM.getCell(`B${tot}`).value = "TOTALI DEL PERIODO";
+    const rng = col => firstMov ? `SUM(${col}${firstMov}:${col}${lastMov})` : "0";
+    money(wsM.getCell(`D${tot}`), { formula: rng("D") }, C.green, true);
+    money(wsM.getCell(`E${tot}`), { formula: rng("E") }, C.red, true);
+    money(wsM.getCell(`F${tot}`), { formula: `F${saldoRow}+D${tot}-E${tot}` }, C.ink, true);
+    for (let c = 1; c <= 6; c++) { const k = wsM.getCell(tot, c); k.fill = fill(C.band); k.border = { top: { style: "thin", color: { argb: C.ink } } }; if (c === 2) k.font = F({ bold: true }); }
+    wsM.getRow(tot).height = 20;
+    r = tot + 2; section(wsM, r, "Riepilogo di cassa"); r++;
+    const rows = [["Saldo iniziale", { formula: `F${saldoRow}` }, C.ink, NUM], ["Totale entrate del periodo", { formula: `D${tot}` }, C.green, '"+ "#,##0.00'], ["Totale uscite del periodo", { formula: `E${tot}` }, C.red, '"- "#,##0.00']];
+    rows.forEach(([l, v, col, fmt]) => { wsM.getCell(`B${r}`).value = l; wsM.getCell(`B${r}`).font = F(); money(wsM.getCell(`E${r}`), v, col, false, fmt); for (let c = 2; c <= 5; c++) wsM.getCell(r, c).border = bottom(); r++; });
+    wsM.getCell(`B${r}`).value = `Saldo di cassa al ${alData}`; wsM.getCell(`B${r}`).font = F({ bold: true });
+    money(wsM.getCell(`E${r}`), { formula: `F${tot}` }, C.ink, true);
+    for (let c = 2; c <= 5; c++) { wsM.getCell(r, c).fill = fill(C.band); wsM.getCell(r, c).border = { top: { style: "thin", color: { argb: C.ink } } }; }
+    r += 2; section(wsM, r, "Legenda codici causale"); r++;
+    wsM.mergeCells(`A${r}:F${r}`);
+    wsM.getCell(`A${r}`).value = Object.entries(d.piano).map(([k, v]) => `${k} ${v}`).join(" · ");
+    wsM.getCell(`A${r}`).font = F({ size: 8, color: { argb: C.grey } }); wsM.getCell(`A${r}`).alignment = { wrapText: true, vertical: "top" };
+    wsM.getRow(r).height = 36;
+    wsM.getColumn(7).hidden = true;
+    wsM.pageSetup.printArea = `A1:F${r}`;
+    wsM.pageSetup.printTitlesRow = "5:5";
+    mRef = { saldo: `Movimenti!$F$${saldoRow}`, cod: `Movimenti!$C$${firstMov || 6}:$C$${lastMov}`, ent: `Movimenti!$D$${firstMov || 6}:$D$${lastMov}`, usc: `Movimenti!$E$${firstMov || 6}:$E$${lastMov}`, mese: `Movimenti!$G$${firstMov || 6}:$G$${lastMov}`, totE: `Movimenti!$D$${tot}`, totU: `Movimenti!$E$${tot}`, fine: `Movimenti!$F$${tot}` };
+  }
+
+  // ---------------- Rendiconto ----------------
+  const wsR = wb.addWorksheet("Rendiconto");
+  setup(wsR, "Rendiconto per cassa", [8, 58, 18], 3);
+  titolo(wsR, 2, "Rendiconto per cassa", `Esercizio ${anno} — ${d.chiuso ? "situazione al " + alData : "situazione aggiornata al " + alData}`, 3);
+  let r = 6;
+  const ref = {};
+  function blocco(tit, codici, totLabel, colore) {
+    section(wsR, r, tit); r++;
+    header(wsR, r, ["Cod.", "Descrizione", "Importo (EUR)"], 3); r++;
+    const first = r;
+    for (const k of codici) {
+      wsR.getCell(`A${r}`).value = k; wsR.getCell(`A${r}`).font = F({ bold: true });
+      wsR.getCell(`B${r}`).value = d.piano[k]; wsR.getCell(`B${r}`).font = F();
+      const sign = k[0] === "A" ? [mRef?.ent, mRef?.usc] : [mRef?.usc, mRef?.ent];
+      const v = mRef ? { formula: `SUMIFS(${sign[0]},${mRef.cod},"${k}")-SUMIFS(${sign[1]},${mRef.cod},"${k}")` } : (d.perCausale[k] || 0);
+      money(wsR.getCell(`C${r}`), v, (d.perCausale[k] || 0) ? colore : C.grey);
+      for (let c = 1; c <= 3; c++) wsR.getCell(r, c).border = bottom();
+      r++;
+    }
+    wsR.getCell(`B${r}`).value = totLabel; wsR.getCell(`B${r}`).font = F({ bold: true });
+    money(wsR.getCell(`C${r}`), { formula: `SUM(C${first}:C${r - 1})` }, colore, true);
+    for (let c = 1; c <= 3; c++) { wsR.getCell(r, c).fill = fill(C.band); wsR.getCell(r, c).border = { top: { style: "thin", color: { argb: C.ink } } }; }
+    wsR.getRow(r).height = 20;
+    const t = r; r += 2; return t;
+  }
+  ref.totA = blocco("Proventi e ricavi", ["A1", "A2", "A3", "A4"], "TOTALE PROVENTI", C.green);
+  ref.totB = blocco("Oneri e costi", ["B1", "B2", "B3", "B4", "B5"], "TOTALE ONERI", C.red);
+  r--;
+  const avanzo = d.entrate - d.uscite;
+  wsR.mergeCells(`A${r}:B${r}`);
+  const lab = wsR.getCell(`A${r}`);
+  lab.value = { formula: `IF(C${r}>=0,"AVANZO DI GESTIONE","DISAVANZO DI GESTIONE")`, result: avanzo >= 0 ? "AVANZO DI GESTIONE" : "DISAVANZO DI GESTIONE" };
+  lab.font = F({ bold: true, size: 12, color: { argb: C.white } }); lab.alignment = { vertical: "middle", indent: 1 };
+  money(wsR.getCell(`C${r}`), { formula: `C${ref.totA}-C${ref.totB}` }, C.white, true);
+  wsR.getCell(`C${r}`).font = F({ bold: true, size: 14, color: { argb: C.white } }); wsR.getCell(`C${r}`).alignment = { horizontal: "right", vertical: "middle" };
+  [1, 2, 3].forEach(c => wsR.getCell(r, c).fill = fill(avanzo >= 0 ? C.greenBar : C.redBar));
+  wsR.getRow(r).height = 30; ref.avanzo = r;
+  r += 2; section(wsR, r, "Situazione di cassa"); r++;
+  header(wsR, r, ["Movimentazione di cassa", "", "Importo (EUR)"], 3); wsR.mergeCells(`A${r}:B${r}`); r++;
+  const cassa = [
+    [`Saldo di cassa al 1° gennaio ${anno}`, mRef ? { formula: mRef.saldo } : d.saldoIniziale, C.ink, NUM],
+    ["Totale entrate registrate nel periodo", mRef ? { formula: mRef.totE } : d.totE, C.green, '"+ "#,##0.00'],
+    ["Totale uscite registrate nel periodo", mRef ? { formula: mRef.totU } : d.totU, C.red, '"- "#,##0.00']];
+  const cIni = r;
+  cassa.forEach(([l, v, col, fmt]) => { wsR.mergeCells(`A${r}:B${r}`); wsR.getCell(`A${r}`).value = l; wsR.getCell(`A${r}`).font = F(); money(wsR.getCell(`C${r}`), v, col, false, fmt); for (let c = 1; c <= 3; c++) wsR.getCell(r, c).border = bottom(); r++; });
+  wsR.mergeCells(`A${r}:B${r}`);
+  wsR.getCell(`A${r}`).value = `Saldo di cassa al ${alData}`; wsR.getCell(`A${r}`).font = F({ bold: true });
+  money(wsR.getCell(`C${r}`), { formula: `C${cIni}+C${cIni + 1}-C${cIni + 2}` }, C.ink, true);
+  for (let c = 1; c <= 3; c++) { wsR.getCell(r, c).fill = fill(C.band); wsR.getCell(r, c).border = { top: { style: "thin", color: { argb: C.ink } } }; }
+  ref.cassaFine = r;
+  if (d.nonClass) {
+    r++; wsR.mergeCells(`A${r}:C${r}`);
+    wsR.getCell(`A${r}`).value = `Nota: la cassa comprende ${d.nonClass.toFixed(2).replace(".", ",")} € di movimenti senza causale, non inclusi nel rendiconto.`;
+    wsR.getCell(`A${r}`).font = F({ size: 8, color: { argb: C.red } });
+  }
+  r += 2; wsR.mergeCells(`A${r}:C${r}`);
+  wsR.getCell(`A${r}`).value = `Rendiconto redatto per cassa, secondo lo schema del Modello D previsto dal D.M. 5 marzo 2020 per gli enti del Terzo settore. Gli importi sono espressi in euro e derivano dalla registrazione analitica dei movimenti riportata nel registro di cassa dell'esercizio ${anno}.` + (d.chiuso ? "" : " Il documento espone la situazione alla data indicata e non costituisce il rendiconto definitivo di fine esercizio.");
+  wsR.getCell(`A${r}`).font = F({ size: 8, color: { argb: C.grey } }); wsR.getCell(`A${r}`).alignment = { wrapText: true, vertical: "top" };
+  wsR.getRow(r).height = 48;
+  wsR.pageSetup.printArea = `A1:C${r}`;
+
+  // ---------------- Cruscotto ----------------
+  const wsC = wb.addWorksheet("Cruscotto");
+  setup(wsC, "Cruscotto", [30, 16, 16, 16], 4);
+  titolo(wsC, 2, "Cruscotto", `Esercizio ${anno} — situazione al ${alData}`, 4);
+  r = 6; section(wsC, r, "Sintesi"); r++;
+  header(wsC, r, ["Indicatore", "", "", "Importo (EUR)"], 4); wsC.mergeCells(`A${r}:C${r}`); r++;
+  const kpi = [["Saldo di cassa", `Rendiconto!C${ref.cassaFine}`, C.ink], ["Proventi", `Rendiconto!C${ref.totA}`, C.green], ["Oneri", `Rendiconto!C${ref.totB}`, C.red], [{ formula: `IF(Rendiconto!C${ref.avanzo}>=0,"Avanzo di gestione","Disavanzo di gestione")`, result: avanzo >= 0 ? "Avanzo di gestione" : "Disavanzo di gestione" }, `Rendiconto!C${ref.avanzo}`, avanzo >= 0 ? C.green : C.red]];
+  kpi.forEach(([l, f, col]) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = l; wsC.getCell(`A${r}`).font = F({ bold: true }); money(wsC.getCell(`D${r}`), { formula: f }, col, true); wsC.getCell(`D${r}`).font = F({ bold: true, size: 12, color: { argb: col } }); for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom(); wsC.getRow(r).height = 20; r++; });
+  r++; section(wsC, r, "Quadratura dei conti" + (d.saldiAl ? ` (saldi al ${dIt(d.saldiAl)})` : "")); r++;
+  header(wsC, r, ["Conto", "", "", "Importo (EUR)"], 4); wsC.mergeCells(`A${r}:C${r}`); r++;
+  const q0 = r;
+  Object.entries(d.conti).forEach(([k, n]) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = n; wsC.getCell(`A${r}`).font = F(); money(wsC.getCell(`D${r}`), Number(d.saldiConti[k]) || 0, C.ink); for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom(); r++; });
+  const qTot = r;
+  const qrows = [["Totale conti", { formula: `SUM(D${q0}:D${r - 1})` }, true], ["Saldo da prima nota", { formula: `Rendiconto!C${ref.cassaFine}` }, false], ["Differenza", { formula: `D${qTot}-D${qTot + 1}` }, true]];
+  qrows.forEach(([l, v, b], i) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = l; wsC.getCell(`A${r}`).font = F({ bold: b }); money(wsC.getCell(`D${r}`), v, C.ink, b); for (let c = 1; c <= 4; c++) { wsC.getCell(r, c).border = bottom(); if (i !== 1) wsC.getCell(r, c).fill = fill(C.band); } r++; });
+  wsC.addConditionalFormatting({ ref: `D${r - 1}`, rules: [{ type: "cellIs", operator: "notBetween", formulae: ["-0.004", "0.004"], style: { font: { color: { argb: C.red }, bold: true } } }] });
+  r++; section(wsC, r, "Entrate e uscite per mese"); r++;
+  header(wsC, r, ["Mese", "Entrate", "Uscite", "Netto"], 2); r++;
+  const m0 = r;
+  for (let i = 0; i < 12; i++) {
+    wsC.getCell(`A${r}`).value = `${MESI[i]} ${anno}`; wsC.getCell(`A${r}`).font = F();
+    const pm = d.perMese.find(x => x.mese === i + 1) || {};
+    money(wsC.getCell(`B${r}`), mRef ? { formula: `SUMIFS(${mRef.ent},${mRef.mese},${i + 1})` } : (Number(pm.E) || 0), C.green);
+    money(wsC.getCell(`C${r}`), mRef ? { formula: `SUMIFS(${mRef.usc},${mRef.mese},${i + 1})` } : (Number(pm.U) || 0), C.red);
+    money(wsC.getCell(`D${r}`), { formula: `B${r}-C${r}` }, C.ink);
+    for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom();
+    r++;
+  }
+  wsC.getCell(`A${r}`).value = "TOTALE"; wsC.getCell(`A${r}`).font = F({ bold: true });
+  money(wsC.getCell(`B${r}`), { formula: `SUM(B${m0}:B${r - 1})` }, C.green, true);
+  money(wsC.getCell(`C${r}`), { formula: `SUM(C${m0}:C${r - 1})` }, C.red, true);
+  money(wsC.getCell(`D${r}`), { formula: `B${r}-C${r}` }, C.ink, true);
+  for (let c = 1; c <= 4; c++) { wsC.getCell(r, c).fill = fill(C.band); wsC.getCell(r, c).border = { top: { style: "thin", color: { argb: C.ink } } }; }
+  if (mRef && d.dateFuoriAnno) { r++; wsC.mergeCells(`A${r}:D${r}`); wsC.getCell(`A${r}`).value = "Il totale per mese può differire dal rendiconto: alcuni movimenti dell'esercizio hanno data nell'anno successivo."; wsC.getCell(`A${r}`).font = F({ size: 8, color: { argb: C.grey } }); }
+  wsC.pageSetup.printArea = `A1:D${r}`;
+
+  // ordine e foglio attivo
+  const order = { movimenti: "Movimenti", rendiconto: "Rendiconto", cruscotto: "Cruscotto" };
+  const target = wb.getWorksheet(order[focus]) || wsR;
+  wb.views = [{ activeTab: wb.worksheets.indexOf(target), firstSheet: 0 }];
+  return wb;
+}
+
+let excelJsP = null;
+function loadExcelJs() {
+  if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  return excelJsP ||= new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"; sc.onload = () => ok(window.ExcelJS); sc.onerror = () => { excelJsP = null; ko(new Error("libreria non caricata")); }; document.head.appendChild(sc); });
+}
+async function stampaExcel(focus, btn) {
+  const testo = btn.textContent; btn.disabled = true; btn.textContent = "Preparo il file…";
+  try {
+    const ExcelJS = await loadExcelJs();
+    const r = S.riep || {}, nc = Number(r.non_classificati) || 0;
+    const oggi = new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+    const chiuso = ANNO < new Date().getFullYear();
+    const d = { anno: ANNO, oggi, alData: chiuso ? `31/12/${ANNO}` : oggi, chiuso, hasMov: R("prima_nota"), mov: S.mov, saldoIniziale: saldoIniziale(), piano: PIANO,
+      perCausale: r.per_causale || {}, entrate: Number(r.entrate) || 0, uscite: Number(r.uscite) || 0, nonClass: nc,
+      totE: (Number(r.entrate) || 0) + Math.max(nc, 0), totU: (Number(r.uscite) || 0) + Math.max(-nc, 0),
+      saldiConti: r.saldi_conti || {}, saldiAl: r.saldi_al, conti: CONTI, perMese: r.per_mese || [],
+      dateFuoriAnno: S.mov.some(m => !m.data.startsWith(String(ANNO))) };
+    const wb = buildWorkbook(ExcelJS, d, focus);
+    const buf = await wb.xlsx.writeBuffer();
+    const url = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = document.createElement("a"); a.href = url; a.download = `Alkimia_${ANNO}_${{ movimenti: "Movimenti", rendiconto: "Rendiconto", cruscotto: "Cruscotto" }[focus]}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (e) { S.error = "Non sono riuscito a creare il file Excel: " + (e.message || e); render(); }
+  finally { btn.disabled = false; btn.textContent = testo; }
+}
+
 // ---------- export ----------
 function download(name, text) {
   const url = URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" }));
@@ -1059,7 +1303,7 @@ document.addEventListener("click", async e => {
   else if (t.dataset.socio) openSocio(S.soci.find(s => s.numero === Number(t.dataset.socio)));
   else if (t.id === "btn-newutente") openUtente();
   else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
-  else if (t.id === "btn-csv") download(`Alkimia_prima_nota_${ANNO}.csv`, csvMov());
+  else if (t.dataset.stampa) stampaExcel(t.dataset.stampa, t);
   else if (t.id === "btn-csv-soci") download("Alkimia_soci.csv", csvSoci());
   else if (t.id === "btn-csv-tess") download(`Alkimia_tessere_${annoSel()}.csv`, csvTessere());
   else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
