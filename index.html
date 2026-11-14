@@ -1076,7 +1076,7 @@ function buildWorkbook(ExcelJS, d, focus) {
 
   // ---------------- Movimenti ----------------
   let wsM = null, mRef = null;
-  if (d.hasMov) {
+  if (d.hasMov && focus === "movimenti") {
     wsM = wb.addWorksheet("Movimenti");
     setup(wsM, "Registro movimenti", [12, 46, 7, 13, 13, 14, 6], 6);
     titolo(wsM, 2, "Registro dei movimenti di cassa", `Periodo dal 01/01/${anno} al ${alData} — ${d.mov.length} movimenti registrati`, 6);
@@ -1137,8 +1137,9 @@ function buildWorkbook(ExcelJS, d, focus) {
     mRef = { saldo: `Movimenti!$F$${saldoRow}`, cod: `Movimenti!$C$${firstMov || 6}:$C$${lastMov}`, ent: `Movimenti!$D$${firstMov || 6}:$D$${lastMov}`, usc: `Movimenti!$E$${firstMov || 6}:$E$${lastMov}`, mese: `Movimenti!$G$${firstMov || 6}:$G$${lastMov}`, totE: `Movimenti!$D$${tot}`, totU: `Movimenti!$E$${tot}`, fine: `Movimenti!$F$${tot}` };
   }
 
+  if (focus === "movimenti") return wb;
   // ---------------- Rendiconto ----------------
-  const wsR = wb.addWorksheet("Rendiconto");
+  const wsR = wb.addWorksheet(focus === "rendiconto" ? "Rendiconto" : "_r");
   setup(wsR, "Rendiconto per cassa", [8, 58, 18], 3);
   titolo(wsR, 2, "Rendiconto per cassa", `Esercizio ${anno} — ${d.chiuso ? "situazione al " + alData : "situazione aggiornata al " + alData}`, 3);
   let r = 6;
@@ -1204,14 +1205,15 @@ function buildWorkbook(ExcelJS, d, focus) {
   titolo(wsC, 2, "Cruscotto", `Esercizio ${anno} — situazione al ${alData}`, 4);
   r = 6; section(wsC, r, "Sintesi"); r++;
   header(wsC, r, ["Indicatore", "", "", "Importo (EUR)"], 4); wsC.mergeCells(`A${r}:C${r}`); r++;
-  const kpi = [["Saldo di cassa", `Rendiconto!C${ref.cassaFine}`, C.ink], ["Proventi", `Rendiconto!C${ref.totA}`, C.green], ["Oneri", `Rendiconto!C${ref.totB}`, C.red], [{ formula: `IF(Rendiconto!C${ref.avanzo}>=0,"Avanzo di gestione","Disavanzo di gestione")`, result: avanzo >= 0 ? "Avanzo di gestione" : "Disavanzo di gestione" }, `Rendiconto!C${ref.avanzo}`, avanzo >= 0 ? C.green : C.red]];
-  kpi.forEach(([l, f, col]) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = l; wsC.getCell(`A${r}`).font = F({ bold: true }); money(wsC.getCell(`D${r}`), { formula: f }, col, true); wsC.getCell(`D${r}`).font = F({ bold: true, size: 12, color: { argb: col } }); for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom(); wsC.getRow(r).height = 20; r++; });
+  const k0 = r, cassaFine = Math.round((d.saldoIniziale + d.totE - d.totU) * 100) / 100;
+  const kpi = [["Saldo di cassa", cassaFine, C.ink], ["Proventi", d.entrate, C.green], ["Oneri", d.uscite, C.red], [{ formula: `IF(D${k0 + 3}>=0,"Avanzo di gestione","Disavanzo di gestione")`, result: avanzo >= 0 ? "Avanzo di gestione" : "Disavanzo di gestione" }, { formula: `D${k0 + 1}-D${k0 + 2}` }, avanzo >= 0 ? C.green : C.red]];
+  kpi.forEach(([l, f, col]) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = l; wsC.getCell(`A${r}`).font = F({ bold: true }); money(wsC.getCell(`D${r}`), f, col, true); wsC.getCell(`D${r}`).font = F({ bold: true, size: 12, color: { argb: col } }); for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom(); wsC.getRow(r).height = 20; r++; });
   r++; section(wsC, r, "Quadratura dei conti" + (d.saldiAl ? ` (saldi al ${dIt(d.saldiAl)})` : "")); r++;
   header(wsC, r, ["Conto", "", "", "Importo (EUR)"], 4); wsC.mergeCells(`A${r}:C${r}`); r++;
   const q0 = r;
   Object.entries(d.conti).forEach(([k, n]) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = n; wsC.getCell(`A${r}`).font = F(); money(wsC.getCell(`D${r}`), Number(d.saldiConti[k]) || 0, C.ink); for (let c = 1; c <= 4; c++) wsC.getCell(r, c).border = bottom(); r++; });
   const qTot = r;
-  const qrows = [["Totale conti", { formula: `SUM(D${q0}:D${r - 1})` }, true], ["Saldo da prima nota", { formula: `Rendiconto!C${ref.cassaFine}` }, false], ["Differenza", { formula: `D${qTot}-D${qTot + 1}` }, true]];
+  const qrows = [["Totale conti", { formula: `SUM(D${q0}:D${r - 1})` }, true], ["Saldo da prima nota", { formula: `D${k0}` }, false], ["Differenza", { formula: `D${qTot}-D${qTot + 1}` }, true]];
   qrows.forEach(([l, v, b], i) => { wsC.mergeCells(`A${r}:C${r}`); wsC.getCell(`A${r}`).value = l; wsC.getCell(`A${r}`).font = F({ bold: b }); money(wsC.getCell(`D${r}`), v, C.ink, b); for (let c = 1; c <= 4; c++) { wsC.getCell(r, c).border = bottom(); if (i !== 1) wsC.getCell(r, c).fill = fill(C.band); } r++; });
   wsC.addConditionalFormatting({ ref: `D${r - 1}`, rules: [{ type: "cellIs", operator: "notBetween", formulae: ["-0.004", "0.004"], style: { font: { color: { argb: C.red }, bold: true } } }] });
   r++; section(wsC, r, "Entrate e uscite per mese"); r++;
@@ -1234,10 +1236,8 @@ function buildWorkbook(ExcelJS, d, focus) {
   if (mRef && d.dateFuoriAnno) { r++; wsC.mergeCells(`A${r}:D${r}`); wsC.getCell(`A${r}`).value = "Il totale per mese può differire dal rendiconto: alcuni movimenti dell'esercizio hanno data nell'anno successivo."; wsC.getCell(`A${r}`).font = F({ size: 8, color: { argb: C.grey } }); }
   wsC.pageSetup.printArea = `A1:D${r}`;
 
-  // ordine e foglio attivo
-  const order = { movimenti: "Movimenti", rendiconto: "Rendiconto", cruscotto: "Cruscotto" };
-  const target = wb.getWorksheet(order[focus]) || wsR;
-  wb.views = [{ activeTab: wb.worksheets.indexOf(target), firstSheet: 0 }];
+  if (focus === "cruscotto") wb.removeWorksheet(wsR.id);
+  else wb.removeWorksheet(wsC.id);
   return wb;
 }
 
@@ -1255,7 +1255,8 @@ async function stampaExcel(focus, btn) {
     const chiuso = ANNO < new Date().getFullYear();
     const d = { anno: ANNO, oggi, alData: chiuso ? `31/12/${ANNO}` : oggi, chiuso, hasMov: R("prima_nota"), mov: S.mov, saldoIniziale: saldoIniziale(), piano: PIANO,
       perCausale: r.per_causale || {}, entrate: Number(r.entrate) || 0, uscite: Number(r.uscite) || 0, nonClass: nc,
-      totE: (Number(r.entrate) || 0) + Math.max(nc, 0), totU: (Number(r.uscite) || 0) + Math.max(-nc, 0),
+      totE: R("prima_nota") ? r2(S.mov.filter(m => m.tipo === "E").reduce((a, m) => a + m.importo, 0)) : (Number(r.entrate) || 0) + Math.max(nc, 0),
+      totU: R("prima_nota") ? r2(S.mov.filter(m => m.tipo === "U").reduce((a, m) => a + m.importo, 0)) : (Number(r.uscite) || 0) + Math.max(-nc, 0),
       saldiConti: r.saldi_conti || {}, saldiAl: r.saldi_al, conti: CONTI, perMese: r.per_mese || [],
       dateFuoriAnno: S.mov.some(m => !m.data.startsWith(String(ANNO))) };
     const wb = buildWorkbook(ExcelJS, d, focus);
