@@ -118,6 +118,15 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 </style>
 <style>
 .login { max-width: 420px; margin: 8vh auto 0; }
+dialog { overflow-x: hidden; }
+.form-grid > * { min-width: 0; }
+.form-grid input, .form-grid select, .form-grid textarea { width: 100%; min-width: 0; }
+.form-grid .check input { width: auto; }
+.ev-card > summary { list-style: none; cursor: pointer; display: grid; gap: 10px; }
+.ev-card > summary::-webkit-details-marker { display: none; }
+.ev-card > summary .toggle { color: var(--accent); font-size: 13px; font-weight: 500; }
+.ev-card[open] > summary .toggle .apri, .ev-card:not([open]) > summary .toggle .chiudi { display: none; }
+.ev-body { display: grid; gap: 12px; margin-top: 12px; }
 .login form { display: grid; gap: 12px; }
 .userbox { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
 .perm-grid { display: grid; grid-template-columns: 1fr 160px; gap: 6px 10px; align-items: center; }
@@ -148,8 +157,8 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
       <label for="m-eserc">Esercizio<input id="m-eserc" type="number" min="2000" max="2100" required></label>
       <label for="m-tipo">Tipo<select id="m-tipo"><option value="E">Entrata</option><option value="U">Uscita</option></select></label>
       <label for="m-importo">Importo (€)<input id="m-importo" type="number" step="0.01" min="0.01" required></label>
-      <label for="m-causale">Causale<select id="m-causale"></select></label>
       <label for="m-desc" class="full">Descrizione<input id="m-desc" type="text" required maxlength="200"></label>
+      <label for="m-causale" class="full">Causale<select id="m-causale"></select></label>
       <label for="m-evento">Evento / progetto<select id="m-evento"></select></label>
       <label for="m-voce">Voce di preventivo<select id="m-voce"></select></label>
       <label for="m-conto">Conto<select id="m-conto"><option value="">Non indicato</option><option value="cc">Conto corrente</option><option value="contanti">Contanti</option><option value="prepagata">Prepagata</option><option value="paypal">PayPal</option></select></label>
@@ -548,6 +557,12 @@ function bindFilters() {
 }
 
 function eventiAnno() { return S.eventi.filter(e => !e.data || Number(e.data.slice(0, 4)) === ANNO); }
+const evOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("alkimia-eventi-aperti") || "[]"); } catch { return []; } })());
+app.addEventListener("toggle", e => {
+  const d = e.target; if (!d.classList?.contains("ev-card")) return;
+  if (d.open) evOpen.add(d.dataset.ev); else evOpen.delete(d.dataset.ev);
+  try { localStorage.setItem("alkimia-eventi-aperti", JSON.stringify([...evOpen])); } catch {}
+}, true);
 function vEventi() {
   const w = W("eventi");
   const evs = eventiAnno().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
@@ -556,17 +571,20 @@ function vEventi() {
     const st = eventStats(ev);
     const res = r2(st.voci.reduce((s, v) => s + v.residuo, 0));
     const ms = R("prima_nota") ? S.mov.filter(m => m.evento === ev.id) : [];
-    return `<section class="panel">
-      <div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div>
-      <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${st.prevTot ? `<div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div>
+    return `<details class="panel ev-card" data-ev="${esc(ev.id)}" ${evOpen.has(ev.id) ? "open" : ""}>
+      <summary><div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>
+        <div class="actions"><span class="toggle"><span class="apri">Mostra dettaglio ▾</span><span class="chiudi">Nascondi dettaglio ▴</span></span>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div></div>
+      <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${st.prevTot ? `<div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div></summary>
+      <div class="ev-body">
       ${ev.note ? `<p class="muted">${esc(ev.note)}</p>` : ""}
       ${st.voci.length ? `<div class="scroll"><table>
         <thead><tr><th>Cod.</th><th>Voce di preventivo</th><th class="n">Preventivo</th><th class="n">Pagato</th><th class="n">Da spendere</th><th>Stato</th></tr></thead>
         <tbody>${st.voci.map(v => `<tr><td><span class="chip b">${esc(v.cod || "")}</span></td><td>${esc(v.voce)}</td><td class="n">${fmt(v.importo)}</td><td class="n">${fmt(v.pagato)}</td><td class="n">${fmt(v.residuo)}</td><td>${v.pagato > v.importo + 0.005 ? `<span class="chip ko">Oltre il preventivo</span>` : v.pagato > 0 && v.residuo < 0.005 ? `<span class="chip ok">Pagato</span>` : v.pagato > 0 ? `<span class="chip wa">In corso</span>` : `<span class="muted">Da pagare</span>`}</td></tr>`).join("")}
         ${st.fuori ? `<tr><td></td><td class="muted">Spese non collegate a una voce</td><td></td><td class="n">${fmt(st.fuori)}</td><td></td><td></td></tr>` : ""}
         <tr class="total"><td></td><td>Totale</td><td class="n">${fmt(st.prevTot)}</td><td class="n">${fmt(st.U)}</td><td class="n">${fmt(res)}</td><td></td></tr></tbody></table></div>` : ""}
-      ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td><span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span></td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
-    </section>`;
+      ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
+      </div>
+    </details>`;
   }).join("") : `<p class="muted">Nessun evento nel ${ANNO}.</p>`}</div>`;
 }
 
@@ -955,7 +973,7 @@ document.addEventListener("click", async e => {
   else if (t.id === "btn-new") openMov();
   else if (t.dataset.edit) openMov(S.mov.find(m => m.id === t.dataset.edit));
   else if (t.id === "btn-newev") openEv();
-  else if (t.dataset.editev) openEv(eventoById(t.dataset.editev));
+  else if (t.dataset.editev) { e.preventDefault(); openEv(eventoById(t.dataset.editev)); }
   else if (t.id === "btn-conti") openConti();
   else if (t.id === "btn-newsocio") openSocio();
   else if (t.dataset.socio) openSocio(S.soci.find(s => s.numero === Number(t.dataset.socio)));
