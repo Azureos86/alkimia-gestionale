@@ -118,6 +118,13 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 </style>
 <style>
 [hidden] { display: none !important; }
+.scroll.tall { max-height: calc(100vh - 150px); overflow: auto; }
+.scroll.tall thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: inset 0 -1px 0 var(--line); }
+th button.sort { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+th button.sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+th button.sort .arr { opacity: .35; font-size: 10px; }
+th button.sort.on { color: var(--accent); }
+th button.sort.on .arr { opacity: 1; }
 .combo { position: relative; }
 .combo-list { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 2px; max-height: 240px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
 .combo-item { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; padding: 7px 10px; background: none; }
@@ -335,7 +342,18 @@ const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota",
 const LIVELLI = { none: "Nessun accesso", read: "Sola lettura", write: "Lettura e scrittura" };
 
 const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, anni: [], soci: [], tesserati: [], tessere: [], utenti: [], registro: [], error: "", loading: false };
-const filt = { q: "", causale: "", evento: "", mese: "" };
+const filt = { q: "", causale: "", evento: "", mese: "", tipo: "", conto: "" };
+const SORT = {};
+function sh(view, key, label, cls = "") {
+  const st = SORT[view], on = st && st.k === key;
+  return `<th class="${cls}" aria-sort="${on ? (st.d > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sort ${on ? "on" : ""}" data-sort="${view}:${key}">${label}<span class="arr" aria-hidden="true">${on ? (st.d > 0 ? "▲" : "▼") : "↕"}</span></button></th>`;
+}
+function sortList(view, list, getters) {
+  const st = SORT[view], g = st && getters[st.k];
+  if (!g) return list;
+  return [...list].sort((a, b) => { const x = g(a), y = g(b); const c = typeof x === "number" && typeof y === "number" ? x - y : String(x ?? "").localeCompare(String(y ?? ""), "it", { numeric: true, sensitivity: "base" }); return c * st.d; });
+}
+let sociQ = "", regLimit = 100;
 let ANNO = (() => { try { return Number(localStorage.getItem("alkimia-anno")) || new Date().getFullYear(); } catch { return new Date().getFullYear(); } })();
 function setAnno(a) { ANNO = a; try { localStorage.setItem("alkimia-anno", String(a)); } catch {} filt.mese = ""; loadAll(); }
 let login = { step: "email", email: "", msg: "" };
@@ -377,7 +395,7 @@ async function loadAll() {
   if (R("soci")) jobs.push(sb.from("soci").select("*").order("numero").then(r => { if (r.error) throw r.error; S.soci = r.data; }));
   if (S.me?.is_admin) {
     jobs.push(sb.from("utenti").select("*").order("email").then(r => { if (r.error) throw r.error; S.utenti = r.data; }));
-    jobs.push(sb.from("registro").select("*").order("id", { ascending: false }).limit(100).then(r => { if (r.error) throw r.error; S.registro = r.data; }));
+    jobs.push(sb.from("registro").select("*").order("id", { ascending: false }).limit(regLimit).then(r => { if (r.error) throw r.error; S.registro = r.data; }));
   }
   try { await Promise.all(jobs); S.error = ""; }
   catch (e) { S.error = errMsg(e); }
@@ -443,6 +461,7 @@ function render() {
   app.innerHTML = html;
   if (v === "movimenti") bindFilters();
   if (v === "tessere") bindTessere();
+  if (v === "soci") { const q = $("s-q"); q.addEventListener("input", () => { sociQ = q.value; const pos = q.selectionStart; render(); const n = $("s-q"); n.focus(); n.setSelectionRange(pos, pos); }); }
 }
 
 // ---------- login ----------
@@ -547,15 +566,17 @@ function filtered() {
   const q = filt.q.trim().toLowerCase();
   return S.mov.filter(m =>
     (!q || m.descrizione.toLowerCase().includes(q)) && (!filt.causale || (filt.causale === "-" ? !m.causale : m.causale === filt.causale)) &&
-    (!filt.evento || (filt.evento === "-" ? !m.evento : m.evento === filt.evento)) && (!filt.mese || m.data.slice(5, 7) === filt.mese));
+    (!filt.evento || (filt.evento === "-" ? !m.evento : m.evento === filt.evento)) && (!filt.mese || m.data.slice(5, 7) === filt.mese) &&
+    (!filt.tipo || m.tipo === filt.tipo) && (!filt.conto || (filt.conto === "-" ? !m.conto : m.conto === filt.conto)));
 }
 function vMovimenti() {
   const w = W("prima_nota");
   let saldo = saldoIniziale(); const prog = new Map();
   for (const m of S.mov) { saldo = r2(saldo + (m.tipo === "E" ? m.importo : -m.importo)); prog.set(m.id, saldo); }
-  const list = filtered();
+  const stM = SORT.movimenti, crono = !stM || (stM.k === "data" && stM.d > 0);
+  const list = sortList("movimenti", filtered(), { data: m => m.data, descrizione: m => m.descrizione, causale: m => m.causale || "", evento: m => eventoById(m.evento)?.nome || "", entrata: m => m.tipo === "E" ? m.importo : -1, uscita: m => m.tipo === "U" ? m.importo : -1 });
   const E = r2(list.filter(m => m.tipo === "E").reduce((s, m) => s + m.importo, 0)), U = r2(list.filter(m => m.tipo === "U").reduce((s, m) => s + m.importo, 0));
-  const anyF = filt.q || filt.causale || filt.evento || filt.mese;
+  const anyF = filt.q || filt.causale || filt.evento || filt.mese || filt.tipo || filt.conto || !crono;
   return `<section class="panel">
     <div class="panel-head"><h2>Prima nota ${ANNO}</h2>
       <div class="actions"><button data-stampa="movimenti">Stampa (Excel)</button>${w ? `<button class="primary" id="btn-new">Nuovo movimento</button>` : ""}</div></div>
@@ -563,11 +584,13 @@ function vMovimenti() {
       <label for="f-q">Cerca<input id="f-q" type="search" value="${esc(filt.q)}" placeholder="descrizione"></label>
       <label for="f-c">Causale<select id="f-c"><option value="">Tutte</option><option value="-" ${filt.causale === "-" ? "selected" : ""}>Da classificare</option>${Object.keys(PIANO).map(k => `<option ${filt.causale === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
       <label for="f-e">Evento<select id="f-e"><option value="">Tutti</option><option value="-" ${filt.evento === "-" ? "selected" : ""}>Nessun evento</option>${S.eventi.map(e => `<option value="${esc(e.id)}" ${filt.evento === e.id ? "selected" : ""}>${esc(e.nome)}</option>`).join("")}</select></label>
+      <label for="f-t">Tipo<select id="f-t"><option value="">Entrate e uscite</option><option value="E" ${filt.tipo === "E" ? "selected" : ""}>Solo entrate</option><option value="U" ${filt.tipo === "U" ? "selected" : ""}>Solo uscite</option></select></label>
+      <label for="f-k">Conto<select id="f-k"><option value="">Tutti</option><option value="-" ${filt.conto === "-" ? "selected" : ""}>Non indicato</option>${Object.entries(CONTI).map(([k, n]) => `<option value="${k}" ${filt.conto === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>
       <label for="f-m">Mese<select id="f-m"><option value="">Tutti</option>${MESI.map((n, i) => { const v = String(i + 1).padStart(2, "0"); return `<option value="${v}" ${filt.mese === v ? "selected" : ""}>${n}</option>`; }).join("")}</select></label>
     </div>
-    <p class="muted">${list.length} movimenti · entrate ${fmt(E)} · uscite ${fmt(U)}</p>
-    <div class="scroll"><table>
-      <thead><tr><th>Data</th><th>Descrizione</th><th>Causale</th><th>Evento</th><th class="n">Entrata</th><th class="n">Uscita</th><th class="n">Saldo</th>${w ? "<th></th>" : ""}</tr></thead>
+    <p class="muted">${list.length} movimenti · entrate ${fmt(E)} · uscite ${fmt(U)}${crono ? "" : ` · <button class="link" id="btn-crono">Torna all'ordine cronologico</button> per vedere il saldo progressivo`}</p>
+    <div class="scroll tall"><table>
+      <thead><tr>${sh("movimenti", "data", "Data")}${sh("movimenti", "descrizione", "Descrizione")}${sh("movimenti", "causale", "Causale")}${sh("movimenti", "evento", "Evento")}${sh("movimenti", "entrata", "Entrata", "n")}${sh("movimenti", "uscita", "Uscita", "n")}${crono ? `<th class="n">Saldo</th>` : ""}${w ? "<th></th>" : ""}</tr></thead>
       <tbody>
       ${anyF ? "" : `<tr><td class="muted">01/01/${ANNO}</td><td>Saldo iniziale</td><td></td><td></td><td class="n">${fmt(saldoIniziale())}</td><td></td><td class="n">${fmt(saldoIniziale())}</td>${w ? "<td></td>" : ""}</tr>`}
       ${list.map(m => { const ev = eventoById(m.evento); return `<tr>
@@ -576,14 +599,14 @@ function vMovimenti() {
         <td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span>` : `<span class="chip wa">Da classificare</span>`}</td>
         <td>${ev ? esc(ev.nome) : ""}</td>
         <td class="n pos">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg">${m.tipo === "U" ? fmt(m.importo) : ""}</td>
-        <td class="n">${fmt(prog.get(m.id))}</td>
+        ${crono ? `<td class="n">${fmt(prog.get(m.id))}</td>` : ""}
         ${w ? `<td><button class="link" data-edit="${esc(m.id)}">Modifica</button></td>` : ""}</tr>`; }).join("")}
       </tbody></table></div>
   </section>`;
 }
 function bindFilters() {
   const on = (id, key, ev) => { const el = $(id); el.addEventListener(ev, () => { filt[key] = el.value; const pos = el.selectionStart; render(); const n = $(id); n.focus(); if (key === "q" && pos != null) n.setSelectionRange(pos, pos); }); };
-  on("f-q", "q", "input"); on("f-c", "causale", "change"); on("f-e", "evento", "change"); on("f-m", "mese", "change");
+  on("f-q", "q", "input"); on("f-c", "causale", "change"); on("f-e", "evento", "change"); on("f-m", "mese", "change"); on("f-t", "tipo", "change"); on("f-k", "conto", "change");
 }
 
 function eventiAnno() { return S.eventi.filter(e => !e.data || Number(e.data.slice(0, 4)) === ANNO); }
@@ -644,9 +667,10 @@ function vSoci() {
   return `<section class="panel">
     <div class="panel-head"><h2>Libro soci</h2><div class="actions"><button id="btn-csv-soci">Esporta per Excel</button>${w ? `<button class="primary" id="btn-newsocio">Nuovo socio</button>` : ""}</div></div>
     <div class="kv"><div><span>Soci iscritti</span><span>${S.soci.length}</span></div></div>
-    <div class="scroll"><table>
-      <thead><tr><th class="n">N.</th><th>Socio</th><th>Comune</th><th>Ammissione</th>${w ? "<th></th>" : ""}</tr></thead>
-      <tbody>${S.soci.map(s => `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td>
+    <div class="filters"><label for="s-q">Cerca<input id="s-q" type="search" value="${esc(sociQ)}" placeholder="nome o comune"></label></div>
+    <div class="scroll tall"><table>
+      <thead><tr>${sh("soci", "numero", "N.", "n")}${sh("soci", "nome", "Socio")}${sh("soci", "comune", "Comune")}${sh("soci", "ammissione", "Ammissione")}${w ? "<th></th>" : ""}</tr></thead>
+      <tbody>${sortList("soci", S.soci.filter(s => !sociQ.trim() || `${s.cognome} ${s.nome} ${s.comune}`.toLowerCase().includes(sociQ.trim().toLowerCase())), { numero: s => s.numero, nome: s => `${s.cognome} ${s.nome}`, comune: s => s.comune, ammissione: s => s.ammissione || "" }).map(s => `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td>
         ${w ? `<td><button class="link" data-socio="${s.numero}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody>
     </table></div>
   </section>`;
@@ -655,7 +679,7 @@ function vSoci() {
 // ---------- tessere ----------
 const STATI = { pagata: "Pagata", da_pagare: "Da pagare", onoraria: "Onoraria" };
 const annoNuovo = () => new Date().getFullYear() + 1;
-const tf = { anno: null, q: "", vista: "tutte" };
+const tf = { anno: null, q: "", vista: "tutte", socio: "" };
 function anniTessere() { return [...new Set([...S.tessere.map(t => t.anno), annoNuovo()])].sort((a, b) => b - a); }
 function annoSel() {
   return ANNO;
@@ -676,18 +700,19 @@ function vTessere() {
   const soci = cur.filter(t => personaById(t.tesserato_id)?.socio_numero).length;
   const incassato = r2(cur.reduce((s, t) => s + (t.stato === "pagata" && t.importo ? t.importo : 0), 0));
   const q = tf.q.trim().toLowerCase();
-  const match = p => !q || nomeP(p).toLowerCase().includes(q) || (p?.email || "").toLowerCase().includes(q);
+  const match = p => (!q || nomeP(p).toLowerCase().includes(q) || (p?.email || "").toLowerCase().includes(q)) && (!tf.socio || (tf.socio === "si") === !!p?.socio_numero);
   let body;
   if (tf.vista === "non_rinnovati") {
-    const rows = nonRinnovati.filter(match);
+    const rows = sortList("nonrinn", nonRinnovati.filter(match), { persona: nomeP, email: p => p.email || "", telefono: p => p.telefono || "" });
     body = `<p class="muted">${rows.length} persone avevano la tessera ${anno - 1} e non ancora la ${anno}.</p>
-    <div class="scroll"><table><thead><tr><th>Persona</th><th>Email</th><th>Telefono</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
+    <div class="scroll tall"><table><thead><tr>${sh("nonrinn", "persona", "Persona")}${sh("nonrinn", "email", "Email")}${sh("nonrinn", "telefono", "Telefono")}${w ? "<th></th>" : ""}</tr></thead><tbody>
     ${rows.map(p => `<tr><td><button class="link nome" data-persona="${esc(p.id)}">${esc(nomeP(p))}</button>${p.socio_numero ? ` <span class="chip">Socio</span>` : ""}</td><td>${esc(p.email || "")}</td><td>${esc(p.telefono || "")}</td>${w ? `<td><button class="link" data-rinnova="${esc(p.id)}">Registra tessera ${anno}</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`;
   } else {
     const rows = cur.filter(t => tf.vista !== "da_pagare" || t.stato === "da_pagare").map(t => ({ t, p: personaById(t.tesserato_id) })).filter(x => match(x.p))
       .sort((a, b) => (a.t.numero ?? 9999) - (b.t.numero ?? 9999) || nomeP(a.p).localeCompare(nomeP(b.p)));
-    body = rows.length ? `<div class="scroll"><table><thead><tr><th class="n">N.</th><th>Persona</th><th>Email</th><th>Telefono</th><th>Stato</th><th class="n">Importo</th><th>Pagata il</th>${w ? "<th></th>" : ""}</tr></thead><tbody>
-    ${rows.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td><button class="link nome" data-persona="${esc(t.tesserato_id)}">${esc(nomeP(p))}</button>${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
+    const rowsS = sortList("tessere", rows, { numero: x => x.t.numero ?? 9999, persona: x => nomeP(x.p), email: x => x.p?.email || "", telefono: x => x.p?.telefono || "", stato: x => STATI[x.t.stato], importo: x => x.t.importo ?? -1, data: x => x.t.data_pagamento || "" });
+    body = rows.length ? `<div class="scroll tall"><table><thead><tr>${sh("tessere", "numero", "N.", "n")}${sh("tessere", "persona", "Persona")}${sh("tessere", "email", "Email")}${sh("tessere", "telefono", "Telefono")}${sh("tessere", "stato", "Stato")}${sh("tessere", "importo", "Importo", "n")}${sh("tessere", "data", "Pagata il")}${w ? "<th></th>" : ""}</tr></thead><tbody>
+    ${rowsS.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td><button class="link nome" data-persona="${esc(t.tesserato_id)}">${esc(nomeP(p))}</button>${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
       <td>${esc(p?.email || "")}</td><td>${esc(p?.telefono || "")}</td>
       <td>${t.stato === "pagata" ? `<span class="chip ok">Pagata</span>` : t.stato === "onoraria" ? `<span class="chip">Onoraria</span>` : `<span class="chip ko">Da pagare</span>`}</td>
       <td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td class="muted">${dIt(t.data_pagamento)}</td>
@@ -702,6 +727,7 @@ function vTessere() {
     <div class="kv"><div><span>Tessere</span><span>${cur.length}</span></div><div><span>Pagate</span><span>${cnt("pagata")}</span></div><div><span>Da pagare</span><span class="${cnt("da_pagare") ? "neg" : ""}">${cnt("da_pagare")}</span></div><div><span>Onorarie</span><span>${cnt("onoraria")}</span></div><div><span>Di cui soci</span><span>${soci}</span></div><div><span>Rinnovi / nuovi</span><span>${rinnovi} / ${cur.length - rinnovi}</span></div><div><span>Non rinnovati</span><span>${nonRinnovati.length}</span></div>${incassato ? `<div><span>Incassato</span><span>${fmt(incassato)}</span></div>` : ""}</div>
     <div class="filters">
       <label for="tf-vista">Mostra<select id="tf-vista"><option value="tutte" ${tf.vista === "tutte" ? "selected" : ""}>Tutte le tessere</option><option value="da_pagare" ${tf.vista === "da_pagare" ? "selected" : ""}>Solo da pagare</option><option value="non_rinnovati" ${tf.vista === "non_rinnovati" ? "selected" : ""}>Non rinnovati dal ${anno - 1}</option></select></label>
+      <label for="tf-socio">Chi<select id="tf-socio"><option value="">Soci e non soci</option><option value="si" ${tf.socio === "si" ? "selected" : ""}>Solo soci</option><option value="no" ${tf.socio === "no" ? "selected" : ""}>Solo non soci</option></select></label>
       <label for="tf-q">Cerca<input id="tf-q" type="search" value="${esc(tf.q)}" placeholder="nome o email"></label>
     </div>
     <p class="muted">Clicca un nome per aprire la scheda della persona con tutte le sue tessere.</p>
@@ -714,6 +740,7 @@ function bindTessere() {
   const v = $("tf-vista"), q = $("tf-q");
   if (!v) return;
   v.addEventListener("change", () => { tf.vista = v.value; render(); });
+  $("tf-socio").addEventListener("change", e => { tf.socio = e.target.value; render(); });
   q.addEventListener("input", () => { tf.q = q.value; const pos = q.selectionStart; render(); const n = $("tf-q"); n.focus(); n.setSelectionRange(pos, pos); });
 }
 
@@ -724,8 +751,8 @@ function vUtenti() {
     <div class="panel-head"><h2>Utenti e permessi</h2><button class="primary" id="btn-newutente">Nuovo utente</button></div>
     <p class="muted">Chi è in elenco entra con la propria email e un codice ricevuto per posta. I permessi sono applicati dal database, non solo dalla pagina.</p>
     <div class="scroll"><table>
-      <thead><tr><th>Utente</th>${Object.values(MODULI).map(n => `<th>${n}</th>`).join("")}<th></th></tr></thead>
-      <tbody>${S.utenti.map(u => `<tr><td>${esc(u.nome || "")}<br><span class="muted">${esc(u.email)}</span>${u.is_admin ? ` <span class="chip wa">Amministratore</span>` : ""}</td>
+      <thead><tr>${sh("utenti", "utente", "Utente")}${Object.values(MODULI).map(n => `<th>${n}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${sortList("utenti", S.utenti, { utente: u => u.nome || u.email }).map(u => `<tr><td>${esc(u.nome || "")}<br><span class="muted">${esc(u.email)}</span>${u.is_admin ? ` <span class="chip wa">Amministratore</span>` : ""}</td>
         ${Object.keys(MODULI).map(m => `<td>${chip(lv(u, m))}</td>`).join("")}
         <td><button class="link" data-utente="${esc(u.email)}">Modifica</button></td></tr>`).join("")}</tbody>
     </table></div>
@@ -736,9 +763,10 @@ function vRegistro() {
   const AZ = { INSERT: "Creato", UPDATE: "Modificato", DELETE: "Eliminato" };
   const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", esercizi: "Esercizi e saldi", tesserati: "Tesserati", tessere: "Tessere" };
   const desc = r => { const d = r.dopo || r.prima || {}; if (r.tabella === "tessere") return `Tessera ${d.anno} · ${nomeP(personaById(d.tesserato_id)) || ""}`; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
-  return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime 100 operazioni, con chi le ha fatte.</p>
-    <div class="scroll"><table><thead><tr><th>Quando</th><th>Chi</th><th>Sezione</th><th>Operazione</th><th>Elemento</th></tr></thead>
-    <tbody>${S.registro.map(r => `<tr><td class="muted">${new Date(r.ts).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(r.utente || "script iniziale")}</td><td>${TB[r.tabella] || esc(r.tabella)}</td><td>${AZ[r.azione] || esc(r.azione)}</td><td>${esc(desc(r))}</td></tr>`).join("")}</tbody></table></div></section>`;
+  return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime ${S.registro.length} operazioni, con chi le ha fatte.</p>
+    <div class="scroll tall"><table><thead><tr>${sh("registro", "ts", "Quando")}${sh("registro", "chi", "Chi")}${sh("registro", "sez", "Sezione")}${sh("registro", "op", "Operazione")}<th>Elemento</th></tr></thead>
+    <tbody>${sortList("registro", S.registro, { ts: r => r.id, chi: r => r.utente || "", sez: r => TB[r.tabella] || r.tabella, op: r => AZ[r.azione] || r.azione }).map(r => `<tr><td class="muted">${new Date(r.ts).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(r.utente || "script iniziale")}</td><td>${TB[r.tabella] || esc(r.tabella)}</td><td>${AZ[r.azione] || esc(r.azione)}</td><td>${esc(desc(r))}</td></tr>`).join("")}</tbody></table></div>
+    ${S.registro.length >= regLimit ? `<div><button id="btn-reg-more">Mostra altre 100</button></div>` : ""}</section>`;
 }
 
 // ---------- dialog: movimento ----------
@@ -1305,6 +1333,9 @@ document.addEventListener("click", async e => {
   else if (t.id === "btn-newutente") openUtente();
   else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
   else if (t.dataset.stampa) stampaExcel(t.dataset.stampa, t);
+  else if (t.dataset.sort) { const [view, k] = t.dataset.sort.split(":"); const st = SORT[view]; SORT[view] = st && st.k === k ? { k, d: -st.d } : { k, d: 1 }; render(); }
+  else if (t.id === "btn-crono") { delete SORT.movimenti; render(); }
+  else if (t.id === "btn-reg-more") { regLimit += 100; t.disabled = true; const r = await sb.from("registro").select("*").order("id", { ascending: false }).limit(regLimit); if (!r.error) S.registro = r.data; render(); }
   else if (t.id === "btn-csv-soci") download("Alkimia_soci.csv", csvSoci());
   else if (t.id === "btn-csv-tess") download(`Alkimia_tessere_${annoSel()}.csv`, csvTessere());
   else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
