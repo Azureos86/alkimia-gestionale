@@ -117,6 +117,11 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 <style>
+[hidden] { display: none !important; }
+.combo { position: relative; }
+.combo-list { position: absolute; z-index: 5; left: 0; right: 0; top: 100%; margin-top: 2px; max-height: 240px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+.combo-item { display: block; width: 100%; text-align: left; border: 0; border-radius: 0; padding: 7px 10px; background: none; }
+.combo-item:hover, .combo-item:focus-visible { background: var(--accent-soft); }
 .login { max-width: 420px; margin: 8vh auto 0; }
 dialog { overflow-x: hidden; }
 .form-grid > * { min-width: 0; }
@@ -238,8 +243,8 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
     <fieldset id="t-chi" style="border:0;padding:0;margin:0;display:grid;gap:8px">
       <div class="check"><label class="check" for="t-mode-old"><input type="radio" name="t-mode" id="t-mode-old" value="old" checked> Persona già registrata</label>
       <label class="check" for="t-mode-new"><input type="radio" name="t-mode" id="t-mode-new" value="new"> Nuova persona</label></div>
-      <label for="t-persona" id="t-persona-l">Persona<input id="t-persona" list="t-persone" placeholder="Scrivi cognome o nome" autocomplete="off"></label>
-      <datalist id="t-persone"></datalist>
+      <div class="combo" id="t-persona-l"><label for="t-persona">Persona<input id="t-persona" placeholder="Clicca per l'elenco o scrivi cognome o nome" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="t-persone-list"></label>
+      <div class="combo-list" id="t-persone-list" role="listbox" hidden></div></div>
       <div class="form-grid" id="t-new" hidden>
         <label for="t-cognome">Cognome<input id="t-cognome" type="text" maxlength="80"></label>
         <label for="t-nome">Nome<input id="t-nome" type="text" maxlength="80"></label>
@@ -876,7 +881,6 @@ function openTess(t, persona, anno) {
   edPers = t ? personaById(t.tesserato_id) : persona || null;
   const a = t?.anno ?? anno ?? annoNuovo();
   $("tess-title").textContent = t ? "Modifica tessera" : "Registra tessera";
-  $("t-persone").innerHTML = S.tesserati.map(p => `<option value="${esc(labelP(p))}"></option>`).join("");
   $("t-socio").innerHTML = `<option value="">Non è socio</option>` + S.soci.map(s => `<option value="${s.numero}">${s.numero} · ${esc(s.cognome)} ${esc(s.nome)}</option>`).join("");
   $("t-socio-l").hidden = !R("soci");
   $("t-chi").hidden = !!edPers; $("t-chi-fisso").hidden = !edPers;
@@ -894,7 +898,25 @@ function openTess(t, persona, anno) {
   $("dlg-tess").showModal();
 }
 document.querySelectorAll('input[name="t-mode"]').forEach(r => r.addEventListener("change", () => setMode(r.value)));
-$("t-persona").addEventListener("change", () => { const p = S.tesserati.find(x => labelP(x) === $("t-persona").value); if (p) fillContatti(p); });
+let comboTyped = false;
+function showCombo() {
+  const q = comboTyped ? $("t-persona").value.trim().toLowerCase() : "";
+  const items = S.tesserati.filter(p => !q || labelP(p).toLowerCase().includes(q));
+  $("t-persone-list").innerHTML = items.length ? items.map(p => `<button type="button" class="combo-item" role="option" data-pid="${esc(p.id)}">${esc(labelP(p))}${p.socio_numero ? " · socio" : ""}</button>`).join("") : `<p class="muted" style="padding:6px 10px;margin:0">Nessuna persona trovata: usa "Nuova persona".</p>`;
+  $("t-persone-list").hidden = false; $("t-persona").setAttribute("aria-expanded", "true");
+}
+function hideCombo() { $("t-persone-list").hidden = true; $("t-persona").setAttribute("aria-expanded", "false"); }
+$("t-persona").addEventListener("focus", () => { comboTyped = false; showCombo(); });
+$("t-persona").addEventListener("click", () => { comboTyped = false; showCombo(); });
+$("t-persona").addEventListener("input", () => { comboTyped = true; showCombo(); });
+$("t-persona").addEventListener("keydown", e => { if (e.key === "Escape" && !$("t-persone-list").hidden) { e.preventDefault(); hideCombo(); } else if (e.key === "ArrowDown") { e.preventDefault(); $("t-persone-list").querySelector(".combo-item")?.focus(); } });
+$("t-persona").addEventListener("blur", () => setTimeout(() => { if (!$("t-persone-list").contains(document.activeElement)) hideCombo(); }, 150));
+$("t-persone-list").addEventListener("mousedown", e => e.preventDefault());
+$("t-persone-list").addEventListener("click", e => {
+  const b = e.target.closest(".combo-item"); if (!b) return;
+  const p = personaById(b.dataset.pid); if (!p) return;
+  $("t-persona").value = labelP(p); fillContatti(p); hideCombo();
+});
 $("t-anno").addEventListener("change", () => { if (edTess) return; const a = Number($("t-anno").value); $("t-numero").value = Math.max(0, ...S.tessere.filter(x => x.anno === a).map(x => x.numero || 0)) + 1; });
 $("tess-del").addEventListener("click", async () => {
   if (!armTess) { armTess = true; $("tess-del").textContent = "Conferma eliminazione"; return; }
