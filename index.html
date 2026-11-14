@@ -123,6 +123,7 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 .perm-grid { display: grid; grid-template-columns: 1fr 160px; gap: 6px 10px; align-items: center; }
 .check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; }
 .check input { width: auto; }
+.anno-sel { margin-left: auto; display: flex; flex-direction: row; align-items: center; gap: 6px; font-weight: 500; }
 pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted); max-width: 520px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -144,6 +145,7 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
     <h2 id="mov-title">Nuovo movimento</h2>
     <div class="form-grid">
       <label for="m-data">Data<input id="m-data" type="date" required></label>
+      <label for="m-eserc">Esercizio<input id="m-eserc" type="number" min="2000" max="2100" required></label>
       <label for="m-tipo">Tipo<select id="m-tipo"><option value="E">Entrata</option><option value="U">Uscita</option></select></label>
       <label for="m-importo">Importo (€)<input id="m-importo" type="number" step="0.01" min="0.01" required></label>
       <label for="m-causale">Causale<select id="m-causale"></select></label>
@@ -191,6 +193,7 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
       <label for="c-prepagata">Prepagata<input id="c-prepagata" type="number" step="0.01"></label>
       <label for="c-paypal">PayPal<input id="c-paypal" type="number" step="0.01"></label>
       <label for="c-al">Saldi al<input id="c-al" type="date"></label>
+      <label for="c-ini" class="full">Saldo al 1° gennaio (vuoto = calcolato dall'anno precedente)<input id="c-ini" type="number" step="0.01"></label>
     </div>
     <p class="err" id="conti-err"></p>
     <div class="actions"><button type="button" data-close>Annulla</button><button type="submit" class="primary">Salva</button></div>
@@ -293,8 +296,10 @@ const MESI = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov",
 const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", tessere: "Tessere", soci: "Soci" };
 const LIVELLI = { none: "Nessun accesso", read: "Sola lettura", write: "Lettura e scrittura" };
 
-const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, config: null, soci: [], tesserati: [], tessere: [], utenti: [], registro: [], error: "", loading: false };
+const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, anni: [], soci: [], tesserati: [], tessere: [], utenti: [], registro: [], error: "", loading: false };
 const filt = { q: "", causale: "", evento: "", mese: "" };
+let ANNO = (() => { try { return Number(localStorage.getItem("alkimia-anno")) || new Date().getFullYear(); } catch { return new Date().getFullYear(); } })();
+function setAnno(a) { ANNO = a; try { localStorage.setItem("alkimia-anno", String(a)); } catch {} filt.mese = ""; loadAll(); }
 let login = { step: "email", email: "", msg: "" };
 
 const eur = new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" });
@@ -320,13 +325,12 @@ const errMsg = e => {
 // ---------- dati ----------
 async function loadAll() {
   S.loading = true;
-  const jobs = [];
+  const jobs = [sb.rpc("anni_disponibili").then(r => { if (r.error) throw r.error; S.anni = r.data || []; })];
   if (R("prima_nota")) {
-    jobs.push(sb.from("movimenti").select("*").order("data").order("updated_at").then(r => { if (r.error) throw r.error; S.mov = r.data.map(m => ({ ...m, importo: Number(m.importo) })); }));
-    jobs.push(sb.from("config").select("*").eq("id", 1).maybeSingle().then(r => { if (r.error) throw r.error; S.config = r.data; }));
+    jobs.push(sb.from("movimenti").select("*").eq("esercizio", ANNO).order("data").order("updated_at").then(r => { if (r.error) throw r.error; S.mov = r.data.map(m => ({ ...m, importo: Number(m.importo) })); }));
   } else S.mov = [];
   if (R("eventi") || R("prima_nota")) jobs.push(sb.from("eventi").select("*").then(r => { if (r.error) throw r.error; S.eventi = r.data; }));
-  if (R("rendiconto") || R("prima_nota")) jobs.push(sb.rpc("riepilogo").then(r => { if (r.error) throw r.error; S.riep = r.data; }));
+  if (R("rendiconto") || R("prima_nota")) jobs.push(sb.rpc("riepilogo", { p_anno: ANNO }).then(r => { if (r.error) throw r.error; S.riep = r.data; }));
   if (R("eventi")) jobs.push(sb.rpc("consuntivo_eventi").then(r => { if (r.error) throw r.error; S.cons = r.data.map(x => ({ ...x, totale: Number(x.totale) })); }));
   if (R("tessere")) {
     jobs.push(sb.from("tesserati").select("*").order("cognome").order("nome").then(r => { if (r.error) throw r.error; S.tesserati = r.data; }));
@@ -355,7 +359,8 @@ async function start(session) {
 }
 
 // ---------- calcoli ----------
-const saldoIniziale = () => Number(S.riep?.saldo_iniziale ?? S.config?.saldo_iniziale ?? 0);
+const saldoIniziale = () => Number(S.riep?.saldo_iniziale ?? 0);
+const nonClass = () => Number(S.riep?.non_classificati ?? 0);
 const eventoById = id => S.eventi.find(e => e.id === id);
 function eventStats(ev) {
   const rows = S.cons.filter(c => c.evento === ev.id);
@@ -390,7 +395,10 @@ function render() {
   ub.innerHTML = `<span>${esc(S.me?.nome || S.session.user.email)}</span><button id="btn-logout">Esci</button>`;
   if (!S.me) { $("nav").innerHTML = ""; app.innerHTML = `<section class="panel login"><h2>Accesso non abilitato</h2><p>L'indirizzo <strong>${esc(S.session.user.email)}</strong> non è ancora abilitato al gestionale. Chiedi al tesoriere di aggiungerti.</p></section>`; return; }
   const vs = views(), v = current();
-  $("nav").innerHTML = vs.map(([k, n]) => `<a href="#${k}" ${k === v ? 'aria-current="page"' : ""}>${n}</a>`).join("");
+  const anni = [...new Set([...(S.anni || []), ANNO])].sort((a, b) => b - a);
+  $("nav").innerHTML = vs.map(([k, n]) => `<a href="#${k}" ${k === v ? 'aria-current="page"' : ""}>${n}</a>`).join("") +
+    `<label class="anno-sel" for="anno-sel">Anno <select id="anno-sel">${anni.map(a => `<option ${a === ANNO ? "selected" : ""}>${a}</option>`).join("")}</select></label>`;
+  $("anno-sel").addEventListener("change", e => setAnno(Number(e.target.value)));
   let html = S.error ? `<p class="notice bad">${esc(S.error)}</p>` : "";
   if (!v) { app.innerHTML = html + `<section class="panel"><p>Il tuo utente non ha ancora moduli abilitati.</p></section>`; return; }
   html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, tessere: vTessere, utenti: vUtenti, registro: vRegistro })[v]();
@@ -436,11 +444,11 @@ function bindLogin() {
 function vCruscotto() {
   const r = S.riep || {};
   const E = Number(r.entrate) || 0, U = Number(r.uscite) || 0, diff = r2(E - U);
-  const cassa = r2(saldoIniziale() + diff);
+  const cassa = r2(saldoIniziale() + diff + nonClass());
   const sc = r.saldi_conti || {};
   const sommaConti = r2(Object.keys(CONTI).reduce((s, k) => s + (Number(sc[k]) || 0), 0));
   const delta = r2(sommaConti - cassa), quadra = Math.abs(delta) < 0.005;
-  const evs = [...S.eventi].sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+  const evs = eventiAnno().sort((a, b) => (a.data || "").localeCompare(b.data || ""));
   const prossimo = R("eventi") ? (evs.find(e => (e.data || "") >= today()) || evs[evs.length - 1]) : null;
   const ultimi = R("prima_nota") ? [...S.mov].slice(-6).reverse() : [];
   return `<div class="tiles">
@@ -499,7 +507,7 @@ function chartMesi(pm) {
 function filtered() {
   const q = filt.q.trim().toLowerCase();
   return S.mov.filter(m =>
-    (!q || m.descrizione.toLowerCase().includes(q)) && (!filt.causale || m.causale === filt.causale) &&
+    (!q || m.descrizione.toLowerCase().includes(q)) && (!filt.causale || (filt.causale === "-" ? !m.causale : m.causale === filt.causale)) &&
     (!filt.evento || (filt.evento === "-" ? !m.evento : m.evento === filt.evento)) && (!filt.mese || m.data.slice(5, 7) === filt.mese));
 }
 function vMovimenti() {
@@ -510,11 +518,11 @@ function vMovimenti() {
   const E = r2(list.filter(m => m.tipo === "E").reduce((s, m) => s + m.importo, 0)), U = r2(list.filter(m => m.tipo === "U").reduce((s, m) => s + m.importo, 0));
   const anyF = filt.q || filt.causale || filt.evento || filt.mese;
   return `<section class="panel">
-    <div class="panel-head"><h2>Prima nota ${esc(S.config?.anno || "")}</h2>
+    <div class="panel-head"><h2>Prima nota ${ANNO}</h2>
       <div class="actions"><button id="btn-csv">Esporta per Excel</button>${w ? `<button class="primary" id="btn-new">Nuovo movimento</button>` : ""}</div></div>
     <div class="filters">
       <label for="f-q">Cerca<input id="f-q" type="search" value="${esc(filt.q)}" placeholder="descrizione"></label>
-      <label for="f-c">Causale<select id="f-c"><option value="">Tutte</option>${Object.keys(PIANO).map(k => `<option ${filt.causale === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+      <label for="f-c">Causale<select id="f-c"><option value="">Tutte</option><option value="-" ${filt.causale === "-" ? "selected" : ""}>Da classificare</option>${Object.keys(PIANO).map(k => `<option ${filt.causale === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
       <label for="f-e">Evento<select id="f-e"><option value="">Tutti</option><option value="-" ${filt.evento === "-" ? "selected" : ""}>Nessun evento</option>${S.eventi.map(e => `<option value="${esc(e.id)}" ${filt.evento === e.id ? "selected" : ""}>${esc(e.nome)}</option>`).join("")}</select></label>
       <label for="f-m">Mese<select id="f-m"><option value="">Tutti</option>${MESI.map((n, i) => { const v = String(i + 1).padStart(2, "0"); return `<option value="${v}" ${filt.mese === v ? "selected" : ""}>${n}</option>`; }).join("")}</select></label>
     </div>
@@ -522,11 +530,11 @@ function vMovimenti() {
     <div class="scroll"><table>
       <thead><tr><th>Data</th><th>Descrizione</th><th>Causale</th><th>Evento</th><th class="n">Entrata</th><th class="n">Uscita</th><th class="n">Saldo</th>${w ? "<th></th>" : ""}</tr></thead>
       <tbody>
-      ${anyF ? "" : `<tr><td class="muted">01/01/${esc(S.config?.anno || "")}</td><td>Saldo iniziale</td><td></td><td></td><td class="n">${fmt(saldoIniziale())}</td><td></td><td class="n">${fmt(saldoIniziale())}</td>${w ? "<td></td>" : ""}</tr>`}
+      ${anyF ? "" : `<tr><td class="muted">01/01/${ANNO}</td><td>Saldo iniziale</td><td></td><td></td><td class="n">${fmt(saldoIniziale())}</td><td></td><td class="n">${fmt(saldoIniziale())}</td>${w ? "<td></td>" : ""}</tr>`}
       ${list.map(m => { const ev = eventoById(m.evento); return `<tr>
         <td class="muted">${dIt(m.data)}</td>
         <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}</td>
-        <td><span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span></td>
+        <td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span>` : `<span class="chip wa">Da classificare</span>`}</td>
         <td>${ev ? esc(ev.nome) : ""}</td>
         <td class="n pos">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg">${m.tipo === "U" ? fmt(m.importo) : ""}</td>
         <td class="n">${fmt(prog.get(m.id))}</td>
@@ -539,10 +547,11 @@ function bindFilters() {
   on("f-q", "q", "input"); on("f-c", "causale", "change"); on("f-e", "evento", "change"); on("f-m", "mese", "change");
 }
 
+function eventiAnno() { return S.eventi.filter(e => !e.data || Number(e.data.slice(0, 4)) === ANNO); }
 function vEventi() {
   const w = W("eventi");
-  const evs = [...S.eventi].sort((a, b) => (b.data || "").localeCompare(a.data || ""));
-  return `<div class="panel-head"><h2>Eventi e progetti</h2>${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div>
+  const evs = eventiAnno().sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+  return `<div class="panel-head"><h2>Eventi e progetti ${ANNO}</h2>${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div>
   <div class="events">${evs.length ? evs.map(ev => {
     const st = eventStats(ev);
     const res = r2(st.voci.reduce((s, v) => s + v.residuo, 0));
@@ -558,7 +567,7 @@ function vEventi() {
         <tr class="total"><td></td><td>Totale</td><td class="n">${fmt(st.prevTot)}</td><td class="n">${fmt(st.U)}</td><td class="n">${fmt(res)}</td><td></td></tr></tbody></table></div>` : ""}
       ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td><span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span></td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
     </section>`;
-  }).join("") : `<p class="muted">Nessun evento registrato.</p>`}</div>`;
+  }).join("") : `<p class="muted">Nessun evento nel ${ANNO}.</p>`}</div>`;
 }
 
 function vRendiconto() {
@@ -567,15 +576,16 @@ function vRendiconto() {
   const row = k => `<tr><td><span class="chip ${k[0] === "B" ? "b" : ""}">${k}</span></td><td>${PIANO[k]}</td><td class="n">${fmt(pc[k])}</td></tr>`;
   const A = Object.keys(PIANO).filter(k => k[0] === "A"), B = Object.keys(PIANO).filter(k => k[0] === "B");
   return `<section class="panel">
-    <div class="panel-head"><h2>Rendiconto per cassa ${esc(r.anno || "")}</h2><span class="muted">dal 01/01 a oggi</span></div>
+    <div class="panel-head"><h2>Rendiconto per cassa ${esc(r.anno || "")}</h2><span class="muted">${ANNO === new Date().getFullYear() ? "dal 01/01 a oggi" : "01/01 – 31/12"}</span></div>
     <div class="grid2">
       <div class="scroll"><table><thead><tr><th colspan="2">Proventi</th><th class="n">Importo</th></tr></thead><tbody>${A.map(row).join("")}<tr class="total"><td></td><td>Totale proventi</td><td class="n">${fmt(E)}</td></tr></tbody></table></div>
       <div class="scroll"><table><thead><tr><th colspan="2">Oneri</th><th class="n">Importo</th></tr></thead><tbody>${B.map(row).join("")}<tr class="total"><td></td><td>Totale oneri</td><td class="n">${fmt(U)}</td></tr></tbody></table></div>
     </div>
     <div class="scroll"><table>
       <tr class="total"><td>${diff >= 0 ? "Avanzo" : "Disavanzo"} di gestione</td><td class="n ${diff >= 0 ? "pos" : "neg"}">${fmt(diff)}</td></tr>
-      <tr><td>Cassa e banca a inizio anno</td><td class="n">${fmt(saldoIniziale())}</td></tr>
-      <tr><td>Cassa e banca a fine periodo</td><td class="n">${fmt(saldoIniziale() + diff)}</td></tr>
+      ${nonClass() ? `<tr><td>Movimenti da classificare (non inclusi nel rendiconto)</td><td class="n">${fmt(nonClass())}</td></tr>` : ""}
+      <tr><td>Cassa e banca al 01/01/${ANNO}</td><td class="n">${fmt(saldoIniziale())}</td></tr>
+      <tr><td>Cassa e banca a fine periodo</td><td class="n">${fmt(saldoIniziale() + diff + nonClass())}</td></tr>
     </table></div>
     <p class="muted">Le voci seguono il piano dei conti di Bilancio 2026.xlsx (A1–A4, B1–B5).</p>
   </section>`;
@@ -600,7 +610,7 @@ const annoNuovo = () => new Date().getFullYear() + 1;
 const tf = { anno: null, q: "", vista: "tutte" };
 function anniTessere() { return [...new Set([...S.tessere.map(t => t.anno), annoNuovo()])].sort((a, b) => b - a); }
 function annoSel() {
-  if (tf.anno) return tf.anno;
+  return ANNO;
   if (S.tessere.some(t => t.anno === annoNuovo())) return annoNuovo();
   return Math.max(...S.tessere.map(t => t.anno), annoNuovo() - 1);
 }
@@ -645,7 +655,6 @@ function vTessere() {
     <p class="muted">La tessera si paga l'anno prima: a fine ${annoNuovo() - 1} si raccolgono le tessere ${annoNuovo()}. Possono averla anche i non soci.</p>
     <div class="kv"><div><span>Tessere</span><span>${cur.length}</span></div><div><span>Pagate</span><span>${cnt("pagata")}</span></div><div><span>Da pagare</span><span class="${cnt("da_pagare") ? "neg" : ""}">${cnt("da_pagare")}</span></div><div><span>Onorarie</span><span>${cnt("onoraria")}</span></div><div><span>Di cui soci</span><span>${soci}</span></div><div><span>Rinnovi / nuovi</span><span>${rinnovi} / ${cur.length - rinnovi}</span></div><div><span>Non rinnovati</span><span>${nonRinnovati.length}</span></div>${incassato ? `<div><span>Incassato</span><span>${fmt(incassato)}</span></div>` : ""}</div>
     <div class="filters">
-      <label for="tf-anno">Anno<select id="tf-anno">${anni.map(a => `<option ${a === anno ? "selected" : ""}>${a}</option>`).join("")}</select></label>
       <label for="tf-vista">Mostra<select id="tf-vista"><option value="tutte" ${tf.vista === "tutte" ? "selected" : ""}>Tutte le tessere</option><option value="da_pagare" ${tf.vista === "da_pagare" ? "selected" : ""}>Solo da pagare</option><option value="non_rinnovati" ${tf.vista === "non_rinnovati" ? "selected" : ""}>Non rinnovati dal ${anno - 1}</option></select></label>
       <label for="tf-q">Cerca<input id="tf-q" type="search" value="${esc(tf.q)}" placeholder="nome o email"></label>
     </div>
@@ -657,9 +666,8 @@ function vTessere() {
     </tbody></table></div></details></section>`;
 }
 function bindTessere() {
-  const a = $("tf-anno"), v = $("tf-vista"), q = $("tf-q");
-  if (!a) return;
-  a.addEventListener("change", () => { tf.anno = Number(a.value); render(); });
+  const v = $("tf-vista"), q = $("tf-q");
+  if (!v) return;
   v.addEventListener("change", () => { tf.vista = v.value; render(); });
   q.addEventListener("input", () => { tf.q = q.value; const pos = q.selectionStart; render(); const n = $("tf-q"); n.focus(); n.setSelectionRange(pos, pos); });
 }
@@ -681,7 +689,7 @@ function vUtenti() {
 
 function vRegistro() {
   const AZ = { INSERT: "Creato", UPDATE: "Modificato", DELETE: "Eliminato" };
-  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", config: "Saldi conti", tesserati: "Tesserati", tessere: "Tessere" };
+  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", esercizi: "Esercizi e saldi", tesserati: "Tesserati", tessere: "Tessere" };
   const desc = r => { const d = r.dopo || r.prima || {}; if (r.tabella === "tessere") return `Tessera ${d.anno} · ${nomeP(personaById(d.tesserato_id)) || ""}`; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
   return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime 100 operazioni, con chi le ha fatte.</p>
     <div class="scroll"><table><thead><tr><th>Quando</th><th>Chi</th><th>Sezione</th><th>Operazione</th><th>Elemento</th></tr></thead>
@@ -691,7 +699,8 @@ function vRegistro() {
 // ---------- dialog: movimento ----------
 let edMov = null, armMov = false;
 function fillCausali(tipo, sel) {
-  $("m-causale").innerHTML = Object.keys(PIANO).filter(k => k[0] === (tipo === "E" ? "A" : "B")).map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${k} · ${PIANO[k]}</option>`).join("");
+  const ks = Object.keys(PIANO).sort((a, b) => ((a[0] === (tipo === "E" ? "A" : "B")) ? 0 : 1) - ((b[0] === (tipo === "E" ? "A" : "B")) ? 0 : 1) || a.localeCompare(b));
+  $("m-causale").innerHTML = (sel === null ? `<option value="" selected>Da classificare</option>` : "") + ks.map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${k} · ${PIANO[k]}</option>`).join("");
 }
 function fillVoci(evId, sel) {
   const voci = eventoById(evId)?.preventivo || [];
@@ -701,7 +710,8 @@ function fillVoci(evId, sel) {
 function openMov(m) {
   edMov = m || null; armMov = false;
   $("mov-title").textContent = m ? "Modifica movimento" : "Nuovo movimento";
-  $("m-data").value = m?.data || today(); $("m-tipo").value = m?.tipo || "U"; $("m-importo").value = m ? m.importo : "";
+  $("m-data").value = m?.data || (ANNO === new Date().getFullYear() ? today() : `${ANNO}-12-31`); $("m-tipo").value = m?.tipo || "U"; $("m-importo").value = m ? m.importo : "";
+  $("m-eserc").value = m?.esercizio ?? Number($("m-data").value.slice(0, 4)); esercManuale = !!m && m.esercizio !== Number(m.data.slice(0, 4));
   $("m-desc").value = m?.descrizione || ""; $("m-conto").value = m?.conto || "";
   fillCausali($("m-tipo").value, m?.causale);
   $("m-evento").innerHTML = `<option value="">Nessuno</option>` + S.eventi.map(e => `<option value="${esc(e.id)}" ${e.id === m?.evento ? "selected" : ""}>${esc(e.nome)}</option>`).join("");
@@ -709,6 +719,9 @@ function openMov(m) {
   $("mov-del").hidden = !m; $("mov-del").textContent = "Elimina"; $("mov-err").textContent = "";
   $("dlg-mov").showModal();
 }
+let esercManuale = false;
+$("m-eserc").addEventListener("input", () => { esercManuale = true; });
+$("m-data").addEventListener("change", () => { if (!esercManuale && $("m-data").value) $("m-eserc").value = Number($("m-data").value.slice(0, 4)); });
 $("m-tipo").addEventListener("change", () => { fillCausali($("m-tipo").value); fillVoci($("m-evento").value, $("m-voce").value); });
 $("m-evento").addEventListener("change", () => fillVoci($("m-evento").value));
 $("mov-del").addEventListener("click", async () => {
@@ -721,7 +734,7 @@ $("form-mov").addEventListener("submit", async e => {
   e.preventDefault();
   const importo = r2(Number($("m-importo").value)), tipo = $("m-tipo").value;
   if (!(importo > 0)) { $("mov-err").textContent = "Inserisci un importo maggiore di zero."; return; }
-  const row = { data: $("m-data").value, tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value, evento: $("m-evento").value || null, voce: tipo === "U" ? ($("m-voce").value || null) : null, conto: $("m-conto").value || null };
+  const row = { data: $("m-data").value, esercizio: Number($("m-eserc").value) || Number($("m-data").value.slice(0, 4)), tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value || null, evento: $("m-evento").value || null, voce: tipo === "U" ? ($("m-voce").value || null) : null, conto: $("m-conto").value || null };
   if (!row.data || !row.descrizione) { $("mov-err").textContent = "Data e descrizione sono obbligatorie."; return; }
   const { error } = edMov ? await sb.from("movimenti").update(row).eq("id", edMov.id) : await sb.from("movimenti").insert(row);
   if (error) { $("mov-err").textContent = errMsg(error); return; }
@@ -767,15 +780,17 @@ $("form-ev").addEventListener("submit", async e => {
 
 // ---------- dialog: saldi ----------
 function openConti() {
-  const sc = S.config?.saldi_conti || {};
+  const sc = S.riep?.saldi_conti || {};
+  $("c-ini").value = S.riep?.saldo_iniziale_manuale ?? "";
   Object.keys(CONTI).forEach(k => $("c-" + k).value = sc[k] ?? "");
-  $("c-al").value = S.config?.saldi_al || today(); $("conti-err").textContent = "";
+  $("c-al").value = S.riep?.saldi_al || today(); $("conti-err").textContent = "";
   $("dlg-conti").showModal();
 }
 $("form-conti").addEventListener("submit", async e => {
   e.preventDefault();
   const saldi_conti = {}; Object.keys(CONTI).forEach(k => saldi_conti[k] = r2(Number($("c-" + k).value) || 0));
-  const { error } = await sb.from("config").update({ saldi_conti, saldi_al: $("c-al").value || null }).eq("id", 1);
+  const ini = $("c-ini").value;
+  const { error } = await sb.from("esercizi").upsert({ anno: ANNO, saldi_conti, saldi_al: $("c-al").value || null, saldo_iniziale: ini === "" ? null : r2(Number(ini)) });
   if (error) { $("conti-err").textContent = errMsg(error); return; }
   $("dlg-conti").close(); loadAll();
 });
@@ -920,8 +935,8 @@ const q = s => `"${String(s ?? "").replace(/"/g, '""')}"`;
 const n = v => v ? String(r2(v)).replace(".", ",") : "";
 function csvMov() {
   const lines = [["Data", "Entrate", "Uscite", "Descrizione", "Causale", "Evento", "Conto"].join(";")];
-  lines.push([`01/01/${S.config?.anno || ""}`, n(saldoIniziale()), "", q("Saldo iniziale"), "-", "", ""].join(";"));
-  for (const m of S.mov) lines.push([dIt(m.data), m.tipo === "E" ? n(m.importo) : "", m.tipo === "U" ? n(m.importo) : "", q(m.descrizione), m.causale, q(eventoById(m.evento)?.nome || ""), q(CONTI[m.conto] || "")].join(";"));
+  lines.push([`01/01/${ANNO}`, n(saldoIniziale()), "", q("Saldo iniziale"), "-", "", ""].join(";"));
+  for (const m of S.mov) lines.push([dIt(m.data), m.tipo === "E" ? n(m.importo) : "", m.tipo === "U" ? n(m.importo) : "", q(m.descrizione), m.causale || "", q(eventoById(m.evento)?.nome || ""), q(CONTI[m.conto] || "")].join(";"));
   return lines.join("\r\n");
 }
 function csvSoci() {
@@ -946,7 +961,7 @@ document.addEventListener("click", async e => {
   else if (t.dataset.socio) openSocio(S.soci.find(s => s.numero === Number(t.dataset.socio)));
   else if (t.id === "btn-newutente") openUtente();
   else if (t.dataset.utente) openUtente(S.utenti.find(u => u.email === t.dataset.utente));
-  else if (t.id === "btn-csv") download(`Alkimia_prima_nota_${S.config?.anno || ""}.csv`, csvMov());
+  else if (t.id === "btn-csv") download(`Alkimia_prima_nota_${ANNO}.csv`, csvMov());
   else if (t.id === "btn-csv-soci") download("Alkimia_soci.csv", csvSoci());
   else if (t.id === "btn-csv-tess") download(`Alkimia_tessere_${annoSel()}.csv`, csvTessere());
   else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
