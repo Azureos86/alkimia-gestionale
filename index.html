@@ -178,6 +178,7 @@ dialog { overflow-x: hidden; }
 button.link.nome { color: var(--ink); font-weight: 500; text-align: left; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 button.link.nome:hover { color: var(--accent); text-decoration-color: var(--accent); }
 .p-anni td, .p-anni th { padding: 6px 8px; }
+.prev-tit { margin: 4px 0 0; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .ev-body { display: grid; gap: 12px; margin-top: 12px; }
 .login form { display: grid; gap: 12px; }
 .userbox { display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13px; }
@@ -232,9 +233,10 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
       <label for="e-data">Data<input id="e-data" type="date"></label>
       <label for="e-note" class="full">Note<textarea id="e-note" rows="2" maxlength="600"></textarea></label>
     </div>
-    <h3>Preventivo costi</h3>
+    <h3>Preventivo</h3>
+    <p class="muted" style="margin:0">Le voci con codice A sono entrate previste, quelle con codice B sono spese.</p>
     <div class="prev-rows" id="e-prev"></div>
-    <div><button type="button" id="e-addrow">Aggiungi voce</button></div>
+    <div class="actions" style="justify-content:flex-start"><button type="button" id="e-addrow-e">Aggiungi entrata prevista</button><button type="button" id="e-addrow">Aggiungi spesa prevista</button></div>
     <p class="err" id="ev-err"></p>
     <div class="actions">
       <button type="button" class="danger left" id="ev-del" hidden>Elimina evento</button>
@@ -460,12 +462,16 @@ function eventStats(ev) {
   const E = r2(rows.filter(c => c.tipo === "E").reduce((s, c) => s + c.totale, 0));
   const U = r2(rows.filter(c => c.tipo === "U").reduce((s, c) => s + c.totale, 0));
   const voci = (ev.preventivo || []).map(v => {
-    const pagato = r2(rows.filter(c => c.tipo === "U" && c.voce === v.id).reduce((s, c) => s + c.totale, 0));
-    return { ...v, importo: Number(v.importo) || 0, pagato, residuo: r2(Math.max((Number(v.importo) || 0) - pagato, 0)) };
+    const tipo = (v.cod || "B")[0] === "A" ? "E" : "U";
+    const pagato = r2(rows.filter(c => c.tipo === tipo && c.voce === v.id).reduce((s, c) => s + c.totale, 0));
+    return { ...v, tipo, importo: Number(v.importo) || 0, pagato, residuo: r2(Math.max((Number(v.importo) || 0) - pagato, 0)) };
   });
-  const prevTot = r2(voci.reduce((s, v) => s + v.importo, 0));
-  const fuori = r2(rows.filter(c => c.tipo === "U" && !voci.some(v => v.id === c.voce)).reduce((s, c) => s + c.totale, 0));
-  return { E, U, diff: r2(E - U), voci, prevTot, fuori, n: rows.reduce((s, c) => s + Number(c.n), 0) };
+  const vociU = voci.filter(v => v.tipo === "U"), vociE = voci.filter(v => v.tipo === "E");
+  const prevTot = r2(vociU.reduce((s, v) => s + v.importo, 0));
+  const prevEnt = r2(vociE.reduce((s, v) => s + v.importo, 0));
+  const fuori = r2(rows.filter(c => c.tipo === "U" && !vociU.some(v => v.id === c.voce)).reduce((s, c) => s + c.totale, 0));
+  const fuoriE = r2(rows.filter(c => c.tipo === "E" && !vociE.some(v => v.id === c.voce)).reduce((s, c) => s + c.totale, 0));
+  return { E, U, diff: r2(E - U), voci, vociU, vociE, prevTot, prevEnt, fuori, fuoriE, n: rows.reduce((s, c) => s + Number(c.n), 0) };
 }
 
 // ---------- navigazione ----------
@@ -575,7 +581,7 @@ function eventSummary(ev) {
   const st = eventStats(ev);
   const pct = st.prevTot ? Math.min(100, st.U / st.prevTot * 100) : 0;
   return `<section class="panel"><div class="panel-head"><h2>${esc(ev.nome)}</h2><a href="#eventi">Dettaglio eventi</a></div>
-    <div class="kv"><div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Già speso</span><span>${fmt(st.U)}</span></div><div><span>Entrate</span><span>${fmt(st.E)}</span></div></div>
+    <div class="kv"><div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Già speso</span><span>${fmt(st.U)}</span></div>${st.prevEnt ? `<div><span>Entrate previste</span><span>${fmt(st.prevEnt)}</span></div>` : ""}<div><span>Entrate</span><span>${fmt(st.E)}</span></div></div>
     ${st.prevTot ? `<div class="bar ${st.U > st.prevTot ? "over" : ""}" role="img" aria-label="Speso il ${Math.round(pct)}% del preventivo"><span style="width:${pct}%"></span></div><p class="muted">Speso il ${Math.round(st.U / st.prevTot * 100)}% del preventivo.</p>` : ""}
   </section>`;
 }
@@ -647,6 +653,14 @@ function bindFilters() {
 }
 
 function eventiAnno() { return S.eventi.filter(e => !e.data || Number(e.data.slice(0, 4)) === ANNO); }
+function prevTable(titolo, voci, prev, eff, res, fuori, entrate) {
+  const lbl = entrate ? ["Incassato", "Da incassare", "Incassata", "Da incassare", "Oltre il previsto"] : ["Pagato", "Da spendere", "Pagata", "Da pagare", "Oltre il preventivo"];
+  return `<h4 class="prev-tit">${titolo}</h4><div class="scroll"><table>
+    <thead><tr><th>Cod.</th><th>Voce</th><th class="n">Previsto</th><th class="n">${lbl[0]}</th><th class="n hs">${lbl[1]}</th><th class="hs">Stato</th></tr></thead>
+    <tbody>${voci.map(v => `<tr><td><span class="chip ${entrate ? "" : "b"}">${esc(v.cod || "")}</span></td><td>${esc(v.voce)}</td><td class="n">${fmt(v.importo)}</td><td class="n">${fmt(v.pagato)}</td><td class="n hs">${fmt(v.residuo)}</td><td class="hs">${v.pagato > v.importo + 0.005 ? `<span class="chip ${entrate ? "ok" : "ko"}">${lbl[4]}</span>` : v.pagato > 0 && v.residuo < 0.005 ? `<span class="chip ok">${lbl[2]}</span>` : v.pagato > 0 ? `<span class="chip wa">In corso</span>` : `<span class="muted">${lbl[3]}</span>`}</td></tr>`).join("")}
+    ${fuori ? `<tr><td></td><td class="muted">${entrate ? "Entrate" : "Spese"} non collegate a una voce</td><td></td><td class="n">${fmt(fuori)}</td><td class="hs"></td><td class="hs"></td></tr>` : ""}
+    <tr class="total"><td></td><td>Totale</td><td class="n">${fmt(prev)}</td><td class="n">${fmt(eff)}</td><td class="n hs">${fmt(res)}</td><td class="hs"></td></tr></tbody></table></div>`;
+}
 const evOpen = new Set((() => { try { return JSON.parse(localStorage.getItem("alkimia-eventi-aperti") || "[]"); } catch { return []; } })());
 app.addEventListener("toggle", e => {
   const d = e.target; if (!d.classList?.contains("ev-card")) return;
@@ -659,19 +673,17 @@ function vEventi() {
   return `<div class="panel-head"><h2>Eventi e progetti ${ANNO}</h2><div class="actions">${evs.length ? `<button data-stampa="eventi">Stampa tutti (Excel)</button>` : ""}${w ? `<button class="primary" id="btn-newev">Nuovo evento</button>` : ""}</div></div>
   <div class="events">${evs.length ? evs.map(ev => {
     const st = eventStats(ev);
-    const res = r2(st.voci.reduce((s, v) => s + v.residuo, 0));
+    const res = r2(st.vociU.reduce((s, v) => s + v.residuo, 0)), resE = r2(st.vociE.reduce((s, v) => s + v.residuo, 0));
+    const hasPrev = st.prevTot || st.prevEnt;
     const ms = R("prima_nota") ? S.mov.filter(m => m.evento === ev.id) : [];
     return `<details class="panel ev-card" data-ev="${esc(ev.id)}" ${evOpen.has(ev.id) ? "open" : ""}>
       <summary><div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>
         <div class="actions"><span class="toggle"><span class="apri">Mostra dettaglio ▾</span><span class="chiudi">Nascondi dettaglio ▴</span></span><button data-stampa="evento:${esc(ev.id)}">Stampa (Excel)</button>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div></div>
-      <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${st.prevTot ? `<div><span>Preventivo costi</span><span>${fmt(st.prevTot)}</span></div><div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div></summary>
+      <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${hasPrev ? `<div><span>Risultato previsto</span><span class="${st.prevEnt - st.prevTot >= 0 ? "pos" : "neg"}">${fmt(st.prevEnt - st.prevTot)}</span></div>` : ""}${st.prevEnt ? `<div><span>Da incassare</span><span>${fmt(resE)}</span></div>` : ""}${st.prevTot ? `<div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div></summary>
       <div class="ev-body">
       ${ev.note ? `<p class="muted">${esc(ev.note)}</p>` : ""}
-      ${st.voci.length ? `<div class="scroll"><table>
-        <thead><tr><th>Cod.</th><th>Voce di preventivo</th><th class="n">Preventivo</th><th class="n">Pagato</th><th class="n">Da spendere</th><th>Stato</th></tr></thead>
-        <tbody>${st.voci.map(v => `<tr><td><span class="chip b">${esc(v.cod || "")}</span></td><td>${esc(v.voce)}</td><td class="n">${fmt(v.importo)}</td><td class="n">${fmt(v.pagato)}</td><td class="n">${fmt(v.residuo)}</td><td>${v.pagato > v.importo + 0.005 ? `<span class="chip ko">Oltre il preventivo</span>` : v.pagato > 0 && v.residuo < 0.005 ? `<span class="chip ok">Pagato</span>` : v.pagato > 0 ? `<span class="chip wa">In corso</span>` : `<span class="muted">Da pagare</span>`}</td></tr>`).join("")}
-        ${st.fuori ? `<tr><td></td><td class="muted">Spese non collegate a una voce</td><td></td><td class="n">${fmt(st.fuori)}</td><td></td><td></td></tr>` : ""}
-        <tr class="total"><td></td><td>Totale</td><td class="n">${fmt(st.prevTot)}</td><td class="n">${fmt(st.U)}</td><td class="n">${fmt(res)}</td><td></td></tr></tbody></table></div>` : ""}
+      ${st.vociE.length ? prevTable("Entrate previste", st.vociE, st.prevEnt, st.E, resE, st.fuoriE, true) : ""}
+      ${st.vociU.length ? prevTable("Spese previste", st.vociU, st.prevTot, st.U, res, st.fuori, false) : ""}
       ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
       </div>
     </details>`;
@@ -813,9 +825,10 @@ function fillCausali(tipo, sel) {
   $("m-causale").innerHTML = (sel === null ? `<option value="" selected>Da classificare</option>` : "") + ks.map(k => `<option value="${k}" ${k === sel ? "selected" : ""}>${k} · ${PIANO[k]}</option>`).join("");
 }
 function fillVoci(evId, sel) {
-  const voci = eventoById(evId)?.preventivo || [];
+  const tipoA = $("m-tipo").value === "E";
+  const voci = (eventoById(evId)?.preventivo || []).filter(v => ((v.cod || "B")[0] === "A") === tipoA);
   $("m-voce").innerHTML = `<option value="">Nessuna</option>` + voci.map(v => `<option value="${esc(v.id)}" ${v.id === sel ? "selected" : ""}>${esc(v.voce)}</option>`).join("");
-  $("m-voce").disabled = !voci.length || $("m-tipo").value !== "U";
+  $("m-voce").disabled = !voci.length;
 }
 function openMov(m) {
   edMov = m || null; armMov = false;
@@ -844,7 +857,7 @@ $("form-mov").addEventListener("submit", async e => {
   e.preventDefault();
   const importo = r2(Number($("m-importo").value)), tipo = $("m-tipo").value;
   if (!(importo > 0)) { $("mov-err").textContent = "Inserisci un importo maggiore di zero."; return; }
-  const row = { data: $("m-data").value, esercizio: Number($("m-eserc").value) || Number($("m-data").value.slice(0, 4)), tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value || null, evento: $("m-evento").value || null, voce: tipo === "U" ? ($("m-voce").value || null) : null, conto: $("m-conto").value || null };
+  const row = { data: $("m-data").value, esercizio: Number($("m-eserc").value) || Number($("m-data").value.slice(0, 4)), tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value || null, evento: $("m-evento").value || null, voce: $("m-voce").value || null, conto: $("m-conto").value || null };
   if (!row.data || !row.descrizione) { $("mov-err").textContent = "Data e descrizione sono obbligatorie."; return; }
   const { error } = edMov ? await sb.from("movimenti").update(row).eq("id", edMov.id) : await sb.from("movimenti").insert(row);
   if (error) { $("mov-err").textContent = errMsg(error); return; }
@@ -856,7 +869,7 @@ let edEv = null, armEv = false;
 function prevRow(v) {
   const div = document.createElement("div");
   div.className = "prev-row"; div.dataset.id = v?.id || "v" + Math.random().toString(36).slice(2, 8);
-  div.innerHTML = `<select aria-label="Codice" class="pv-cod">${Object.keys(PIANO).filter(k => k[0] === "B").map(k => `<option ${k === (v?.cod || "B2") ? "selected" : ""}>${k}</option>`).join("")}</select>
+  div.innerHTML = `<select aria-label="Codice" class="pv-cod">${Object.keys(PIANO).map(k => `<option ${k === (v?.cod || "B2") ? "selected" : ""}>${k}</option>`).join("")}</select>
     <input aria-label="Voce" class="pv-voce" type="text" maxlength="120" value="${esc(v?.voce || "")}" placeholder="Voce">
     <input aria-label="Importo previsto" class="pv-imp" type="number" step="0.01" min="0" value="${v?.importo ?? ""}">
     <button type="button" class="link" aria-label="Rimuovi voce">✕</button>`;
@@ -872,6 +885,7 @@ function openEv(ev) {
   $("dlg-ev").showModal();
 }
 $("e-addrow").addEventListener("click", () => $("e-prev").appendChild(prevRow()));
+$("e-addrow-e").addEventListener("click", () => $("e-prev").appendChild(prevRow({ cod: "A4" })));
 $("ev-del").addEventListener("click", async () => {
   if (!armEv) { armEv = true; $("ev-del").textContent = "Conferma eliminazione"; return; }
   const { error } = await sb.from("eventi").delete().eq("id", edEv.id);
@@ -1385,16 +1399,19 @@ function buildEventi(ExcelJS, d) {
     ws.mergeCells(r, 1, r, 5); k.text(ws.getCell(r, 1), { formula: `IF(F${r}>=0,"Risultato (avanzo)","Risultato (disavanzo)")`, result: ev.E - ev.U >= 0 ? "Risultato (avanzo)" : "Risultato (disavanzo)" }, { bold: true });
     k.money(ws.getCell(r, 6), { formula: `F${s0}-F${s0 + 1}` }, C.ink, true); k.total(ws, r, N); r += 1;
     if (ev.note) { r++; ws.mergeCells(r, 1, r, N); k.text(ws.getCell(r, 1), ev.note, { size: 9, color: { argb: C.grey } }); ws.getRow(r).height = 28; r++; }
-    if (ev.voci.length) {
-      r++; k.section(ws, r, "Preventivo costi"); r++;
-      k.header(ws, r, ["Cod.", "Voce di preventivo", "", "Preventivo", "Pagato", "Da spendere"], [4, 5, 6]); ws.mergeCells(r, 2, r, 3); r++;
+    for (const [tit, entr] of [["Entrate previste", true], ["Spese previste", false]]) {
+      const vv = ev.voci.filter(v => ((v.cod || "B")[0] === "A") === entr);
+      if (!vv.length) continue;
+      r++; k.section(ws, r, tit); r++;
+      k.header(ws, r, ["Cod.", "Voce", "", "Previsto", entr ? "Incassato" : "Pagato", entr ? "Da incassare" : "Da spendere"], [4, 5, 6]); ws.mergeCells(r, 2, r, 3); r++;
       const v0 = r;
-      for (const v of ev.voci) {
+      for (const v of vv) {
         k.text(ws.getCell(r, 1), v.cod || "", { bold: true }); ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), v.voce);
-        k.money(ws.getCell(r, 4), v.importo); k.money(ws.getCell(r, 5), v.pagato, v.pagato > v.importo + 0.005 ? C.red : C.ink); k.money(ws.getCell(r, 6), { formula: `MAX(D${r}-E${r},0)` });
+        k.money(ws.getCell(r, 4), v.importo); k.money(ws.getCell(r, 5), v.pagato, entr ? C.green : (v.pagato > v.importo + 0.005 ? C.red : C.ink)); k.money(ws.getCell(r, 6), { formula: `MAX(D${r}-E${r},0)` });
         k.line(ws, r, N); r++;
       }
-      if (ev.fuori) { ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), "Spese non collegate a una voce", { color: { argb: C.grey } }); k.money(ws.getCell(r, 5), ev.fuori); k.line(ws, r, N); r++; }
+      const fu = entr ? ev.fuoriE : ev.fuori;
+      if (fu) { ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), entr ? "Entrate non collegate a una voce" : "Spese non collegate a una voce", { color: { argb: C.grey } }); k.money(ws.getCell(r, 5), fu); k.line(ws, r, N); r++; }
       ws.mergeCells(r, 2, r, 3); k.text(ws.getCell(r, 2), "TOTALE", { bold: true });
       ["D", "E", "F"].forEach((col, j) => k.money(ws.getCell(r, 4 + j), { formula: `SUM(${col}${v0}:${col}${r - 1})` }, C.ink, true));
       k.total(ws, r, N); r++;
@@ -1487,7 +1504,7 @@ async function stampaExcel(focus, btn) {
     let wb, nome;
     if (focus === "eventi" || focus.startsWith("evento:")) {
       const lista = focus === "eventi" ? eventiAnno().sort((a, b) => (a.data || "").localeCompare(b.data || "")) : [eventoById(focus.slice(7))];
-      const eventi = lista.map(ev => { const st = eventStats(ev); return { ...ev, voci: st.voci, E: st.E, U: st.U, fuori: st.fuori, mov: S.mov.filter(m => m.evento === ev.id) }; });
+      const eventi = lista.map(ev => { const st = eventStats(ev); return { ...ev, voci: st.voci, E: st.E, U: st.U, fuori: st.fuori, fuoriE: st.fuoriE, mov: S.mov.filter(m => m.evento === ev.id) }; });
       wb = buildEventi(ExcelJS, { anno: ANNO, oggi, eventi, hasMov: R("prima_nota"), singolo: focus !== "eventi" });
       nome = focus === "eventi" ? `Alkimia_${ANNO}_Eventi.xlsx` : `Alkimia_Evento_${lista[0].nome.replace(/[^\w]+/g, "_")}.xlsx`;
     } else if (focus === "tessere") {
