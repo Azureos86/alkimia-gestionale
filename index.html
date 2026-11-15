@@ -2,7 +2,15 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light only">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Alkimia">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Gestionale Alkimia</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,18 +33,6 @@
   --font-display: "Spectral", Georgia, "Times New Roman", serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #121816; --surface: #1a2220; --ink: #e5ebe8; --muted: #9aa8a4; --line: #2c3734;
-    --accent: #5fbfb2; --accent-soft: #1f3330; --brass: #d3b260; --good: #6cc47c; --bad: #ee7d70; --warn: #e2b24a;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #121816; --surface: #1a2220; --ink: #e5ebe8; --muted: #9aa8a4; --line: #2c3734;
-  --accent: #5fbfb2; --accent-soft: #1f3330; --brass: #d3b260; --good: #6cc47c; --bad: #ee7d70; --warn: #e2b24a;
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -118,6 +114,47 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 </style>
 <style>
 [hidden] { display: none !important; }
+.ss, .ss-i { display: none; }
+header.top { padding-top: env(safe-area-inset-top); }
+.wrap { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+main { padding-bottom: max(48px, env(safe-area-inset-bottom)); }
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-height: 38px; text-align: left; }
+@media (max-width: 700px) {
+  body { font-size: 15px; -webkit-text-size-adjust: 100%; }
+  input, select, textarea { font-size: 16px; } /* evita lo zoom automatico di iOS */
+  h1 { font-size: 19px; }
+  .logo { width: 34px; }
+  .brand { padding: 10px 0 6px; flex-wrap: nowrap; }
+  .userbox { flex-shrink: 0; }
+  .userbox span { display: none; }
+  nav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 6px; }
+  nav::-webkit-scrollbar { display: none; }
+  nav a { white-space: nowrap; flex: none; padding: 8px 12px; }
+  .anno-sel { position: sticky; right: 0; background: var(--surface); padding-left: 8px; }
+  main { padding-top: 14px; gap: 14px; }
+  .panel { padding: 14px; border-radius: 10px; }
+  .panel-head h2 { font-size: 19px; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .filters label, .filters input, .filters select { width: 100%; min-width: 0; }
+  .hs, .hs-i { display: none; }
+  td.ss, th.ss { display: table-cell; }
+  .ss-i { display: inline; }
+  .ss-i.chip { display: inline-block; margin-left: 4px; }
+  th, td { padding: 8px 6px; }
+  td.n, th.n { font-size: 14px; }
+  th, td { padding: 8px 4px; }
+  td.nowrap { white-space: nowrap; }
+  tr[data-row] { cursor: pointer; }
+  tr[data-row]:active td { background: var(--accent-soft); }
+  th button.sort .arr { display: none; }
+  .tile .value { font-size: 22px; }
+  .tiles { grid-template-columns: 1fr 1fr; gap: 10px; }
+  dialog { width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin: 0; border-radius: 0; border: 0; }
+  dialog form { padding: calc(14px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); min-height: 100%; align-content: start; }
+  dialog .actions { position: sticky; bottom: 0; background: var(--surface); padding: 10px 0 calc(4px + env(safe-area-inset-bottom)); margin-top: auto; border-top: 1px solid var(--line); }
+  .form-grid { grid-template-columns: 1fr; }
+  .scroll.tall { max-height: none; overflow: visible; }
+}
 .scroll.tall { max-height: calc(100vh - 150px); overflow: auto; }
 .scroll.tall thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; box-shadow: inset 0 -1px 0 var(--line); }
 th button.sort { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
@@ -590,17 +627,17 @@ function vMovimenti() {
     </div>
     <p class="muted">${list.length} movimenti · entrate ${fmt(E)} · uscite ${fmt(U)}${crono ? "" : ` · <button class="link" id="btn-crono">Torna all'ordine cronologico</button> per vedere il saldo progressivo`}</p>
     <div class="scroll tall"><table>
-      <thead><tr>${sh("movimenti", "data", "Data")}${sh("movimenti", "descrizione", "Descrizione")}${sh("movimenti", "causale", "Causale")}${sh("movimenti", "evento", "Evento")}${sh("movimenti", "entrata", "Entrata", "n")}${sh("movimenti", "uscita", "Uscita", "n")}${crono ? `<th class="n">Saldo</th>` : ""}${w ? "<th></th>" : ""}</tr></thead>
+      <thead><tr>${sh("movimenti", "data", "Data")}${sh("movimenti", "descrizione", "Descrizione")}${sh("movimenti", "causale", "Causale", "hs")}${sh("movimenti", "evento", "Evento", "hs")}${sh("movimenti", "entrata", "Entrata", "n hs")}${sh("movimenti", "uscita", "Uscita", "n hs")}<th class="n ss">Importo</th>${crono ? `<th class="n">Saldo</th>` : ""}${w ? `<th class="hs"></th>` : ""}</tr></thead>
       <tbody>
-      ${anyF ? "" : `<tr><td class="muted">01/01/${ANNO}</td><td>Saldo iniziale</td><td></td><td></td><td class="n">${fmt(saldoIniziale())}</td><td></td><td class="n">${fmt(saldoIniziale())}</td>${w ? "<td></td>" : ""}</tr>`}
-      ${list.map(m => { const ev = eventoById(m.evento); return `<tr>
-        <td class="muted">${dIt(m.data)}</td>
-        <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}</td>
-        <td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span>` : `<span class="chip wa">Da classificare</span>`}</td>
-        <td>${ev ? esc(ev.nome) : ""}</td>
-        <td class="n pos">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg">${m.tipo === "U" ? fmt(m.importo) : ""}</td>
+      ${anyF ? "" : `<tr><td class="muted nowrap">01/01<span class="hs-i">/${ANNO}</span></td><td>Saldo iniziale</td><td class="hs"></td><td class="hs"></td><td class="n hs">${fmt(saldoIniziale())}</td><td class="hs"></td><td class="ss"></td><td class="n">${fmt(saldoIniziale())}</td>${w ? `<td class="hs"></td>` : ""}</tr>`}
+      ${list.map(m => { const ev = eventoById(m.evento); return `<tr ${w ? `data-row="edit:${esc(m.id)}"` : ""}>
+        <td class="muted nowrap">${dIt(m.data).slice(0, 5)}<span class="hs-i">${dIt(m.data).slice(5)}</span></td>
+        <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}${m.causale ? ` <span class="chip ss-i ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td>
+        <td class="hs">${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span>` : `<span class="chip wa">Da classificare</span>`}</td>
+        <td class="hs">${ev ? esc(ev.nome) : ""}</td>
+        <td class="n pos hs">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg hs">${m.tipo === "U" ? fmt(m.importo) : ""}</td><td class="n ss ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "+" : "−"}${fmt(m.importo)}</td>
         ${crono ? `<td class="n">${fmt(prog.get(m.id))}</td>` : ""}
-        ${w ? `<td><button class="link" data-edit="${esc(m.id)}">Modifica</button></td>` : ""}</tr>`; }).join("")}
+        ${w ? `<td class="hs"><button class="link" data-edit="${esc(m.id)}" aria-label="Modifica"><span class="hs-i">Modifica</span><span class="ss-i" aria-hidden="true">✎</span></button></td>` : ""}</tr>`; }).join("")}
       </tbody></table></div>
   </section>`;
 }
@@ -669,9 +706,9 @@ function vSoci() {
     <div class="kv"><div><span>Soci iscritti</span><span>${S.soci.length}</span></div></div>
     <div class="filters"><label for="s-q">Cerca<input id="s-q" type="search" value="${esc(sociQ)}" placeholder="nome o comune"></label></div>
     <div class="scroll tall"><table>
-      <thead><tr>${sh("soci", "numero", "N.", "n")}${sh("soci", "nome", "Socio")}${sh("soci", "comune", "Comune")}${sh("soci", "ammissione", "Ammissione")}${w ? "<th></th>" : ""}</tr></thead>
-      <tbody>${sortList("soci", S.soci.filter(s => !sociQ.trim() || `${s.cognome} ${s.nome} ${s.comune}`.toLowerCase().includes(sociQ.trim().toLowerCase())), { numero: s => s.numero, nome: s => `${s.cognome} ${s.nome}`, comune: s => s.comune, ammissione: s => s.ammissione || "" }).map(s => `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted">${dIt(s.ammissione)}</td>
-        ${w ? `<td><button class="link" data-socio="${s.numero}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody>
+      <thead><tr>${sh("soci", "numero", "N.", "n")}${sh("soci", "nome", "Socio")}${sh("soci", "comune", "Comune")}${sh("soci", "ammissione", "Ammissione", "hs")}${w ? "<th></th>" : ""}</tr></thead>
+      <tbody>${sortList("soci", S.soci.filter(s => !sociQ.trim() || `${s.cognome} ${s.nome} ${s.comune}`.toLowerCase().includes(sociQ.trim().toLowerCase())), { numero: s => s.numero, nome: s => `${s.cognome} ${s.nome}`, comune: s => s.comune, ammissione: s => s.ammissione || "" }).map(s => `<tr><td class="n">${s.numero}</td><td>${esc(s.cognome)} ${esc(s.nome)}</td><td>${esc(s.comune)}</td><td class="muted hs">${dIt(s.ammissione)}</td>
+        ${w ? `<td><button class="link" data-socio="${s.numero}" aria-label="Modifica"><span class="hs-i">Modifica</span><span class="ss-i" aria-hidden="true">✎</span></button></td>` : ""}</tr>`).join("")}</tbody>
     </table></div>
   </section>`;
 }
@@ -711,12 +748,12 @@ function vTessere() {
     const rows = cur.filter(t => tf.vista !== "da_pagare" || t.stato === "da_pagare").map(t => ({ t, p: personaById(t.tesserato_id) })).filter(x => match(x.p))
       .sort((a, b) => (a.t.numero ?? 9999) - (b.t.numero ?? 9999) || nomeP(a.p).localeCompare(nomeP(b.p)));
     const rowsS = sortList("tessere", rows, { numero: x => x.t.numero ?? 9999, persona: x => nomeP(x.p), email: x => x.p?.email || "", telefono: x => x.p?.telefono || "", stato: x => STATI[x.t.stato], importo: x => x.t.importo ?? -1, data: x => x.t.data_pagamento || "" });
-    body = rows.length ? `<div class="scroll tall"><table><thead><tr>${sh("tessere", "numero", "N.", "n")}${sh("tessere", "persona", "Persona")}${sh("tessere", "email", "Email")}${sh("tessere", "telefono", "Telefono")}${sh("tessere", "stato", "Stato")}${sh("tessere", "importo", "Importo", "n")}${sh("tessere", "data", "Pagata il")}${w ? "<th></th>" : ""}</tr></thead><tbody>
+    body = rows.length ? `<div class="scroll tall"><table><thead><tr>${sh("tessere", "numero", "N.", "n")}${sh("tessere", "persona", "Persona")}${sh("tessere", "email", "Email", "hs")}${sh("tessere", "telefono", "Telefono", "hs")}${sh("tessere", "stato", "Stato")}${sh("tessere", "importo", "Importo", "n")}${sh("tessere", "data", "Pagata il", "hs")}${w ? "<th></th>" : ""}</tr></thead><tbody>
     ${rowsS.map(({ t, p }) => `<tr><td class="n">${t.numero ?? ""}</td><td><button class="link nome" data-persona="${esc(t.tesserato_id)}">${esc(nomeP(p))}</button>${p?.socio_numero ? ` <span class="chip">Socio</span>` : ""}${prevIds.has(t.tesserato_id) ? "" : ` <span class="chip b">Nuovo</span>`}${t.note ? `<br><span class="muted">${esc(t.note)}</span>` : ""}</td>
-      <td>${esc(p?.email || "")}</td><td>${esc(p?.telefono || "")}</td>
+      <td class="hs">${esc(p?.email || "")}</td><td class="hs">${esc(p?.telefono || "")}</td>
       <td>${t.stato === "pagata" ? `<span class="chip ok">Pagata</span>` : t.stato === "onoraria" ? `<span class="chip">Onoraria</span>` : `<span class="chip ko">Da pagare</span>`}</td>
-      <td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td class="muted">${dIt(t.data_pagamento)}</td>
-      ${w ? `<td><button class="link" data-tessera="${esc(t.id)}">Modifica</button></td>` : ""}</tr>`).join("")}</tbody></table></div>`
+      <td class="n">${t.importo != null ? fmt(t.importo) : ""}</td><td class="muted hs">${dIt(t.data_pagamento)}</td>
+      ${w ? `<td><button class="link" data-tessera="${esc(t.id)}" aria-label="Modifica"><span class="hs-i">Modifica</span><span class="ss-i" aria-hidden="true">✎</span></button></td>` : ""}</tr>`).join("")}</tbody></table></div>`
       : `<p class="muted">Nessuna tessera ${anno} ${q || tf.vista !== "tutte" ? "con questi filtri" : "registrata"}.</p>`;
   }
   const altre = q ? S.tesserati.filter(p => match(p) && !curIds.has(p.id)) : [];
@@ -754,7 +791,7 @@ function vUtenti() {
       <thead><tr>${sh("utenti", "utente", "Utente")}${Object.values(MODULI).map(n => `<th>${n}</th>`).join("")}<th></th></tr></thead>
       <tbody>${sortList("utenti", S.utenti, { utente: u => u.nome || u.email }).map(u => `<tr><td>${esc(u.nome || "")}<br><span class="muted">${esc(u.email)}</span>${u.is_admin ? ` <span class="chip wa">Amministratore</span>` : ""}</td>
         ${Object.keys(MODULI).map(m => `<td>${chip(lv(u, m))}</td>`).join("")}
-        <td><button class="link" data-utente="${esc(u.email)}">Modifica</button></td></tr>`).join("")}</tbody>
+        <td><button class="link" data-utente="${esc(u.email)}" aria-label="Modifica"><span class="hs-i">Modifica</span><span class="ss-i" aria-hidden="true">✎</span></button></td></tr>`).join("")}</tbody>
     </table></div>
   </section>`;
 }
@@ -1500,6 +1537,8 @@ function csvTessere() {
 
 // ---------- click ----------
 document.addEventListener("click", async e => {
+  const row = e.target.closest("tr[data-row]");
+  if (row && !e.target.closest("button, a, input, select") && matchMedia("(max-width: 700px)").matches) { const id = row.dataset.row.slice(5); openMov(S.mov.find(m => m.id === id)); return; }
   const t = e.target.closest("button"); if (!t || t.closest("dialog")) return;
   if (t.id === "btn-logout") { await sb.auth.signOut(); login = { step: "email", email: "", msg: "" }; }
   else if (t.id === "btn-new") openMov();
