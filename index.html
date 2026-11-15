@@ -187,6 +187,9 @@ button.link.nome:hover { color: var(--accent); text-decoration-color: var(--acce
 .check input { width: auto; }
 .anno-sel { margin-left: auto; display: flex; flex-direction: row; align-items: center; gap: 6px; font-weight: 500; }
 pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted); max-width: 520px; }
+.stato-sel{padding:4px 6px;font-size:13px;width:auto;min-width:0}
+.ev-adem{margin:0 0 8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#a-dati h3{margin:14px 0 6px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
@@ -215,6 +218,8 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
       <label for="m-evento">Evento / progetto<select id="m-evento"></select></label>
       <label for="m-voce">Voce di preventivo<select id="m-voce"></select></label>
       <label for="m-conto">Conto<select id="m-conto"><option value="">Non indicato</option><option value="cc">Conto corrente</option><option value="contanti">Contanti</option><option value="prepagata">Prepagata</option><option value="paypal">PayPal</option></select></label>
+      <label class="check full" for="m-rend"><input id="m-rend" type="checkbox"> Da rendicontare al Comune (contributo dell'anno)</label>
+      <label for="m-doc" class="full" id="m-doc-l">Documento giustificativo<input id="m-doc" type="text" maxlength="200" placeholder="es. Fattura Visiona Srls n. 144 del 19/12/2023"></label>
     </div>
     <p class="err" id="mov-err"></p>
     <div class="actions">
@@ -230,7 +235,9 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
     <h2 id="ev-title">Nuovo evento</h2>
     <div class="form-grid">
       <label for="e-nome" class="full">Nome<input id="e-nome" type="text" required maxlength="120"></label>
-      <label for="e-data">Data<input id="e-data" type="date"></label>
+      <label for="e-data">Dal<input id="e-data" type="date"></label>
+      <label for="e-fine">Al (se dura più giorni)<input id="e-fine" type="date"></label>
+      <label for="e-ediz">Edizione n. (festival)<input id="e-ediz" type="number" min="1" max="200"></label>
       <label for="e-note" class="full">Note<textarea id="e-note" rows="2" maxlength="600"></textarea></label>
     </div>
     <h3>Preventivo</h3>
@@ -362,6 +369,72 @@ pre.diff { margin: 0; white-space: pre-wrap; font-size: 12px; color: var(--muted
   </form>
 </dialog>
 
+<dialog id="dlg-adem">
+  <form id="form-adem" method="dialog">
+    <h2 id="adem-title">Nuovo adempimento</h2>
+    <div class="form-grid">
+      <label for="a-titolo" class="full">Adempimento<input id="a-titolo" type="text" required maxlength="160"></label>
+      <label for="a-tipo">Tipo<select id="a-tipo"></select></label>
+      <label for="a-anno">Anno di riferimento<input id="a-anno" type="number" min="2000" max="2100" required></label>
+      <label for="a-evento">Evento<select id="a-evento"></select></label>
+      <label for="a-scad">Scadenza<input id="a-scad" type="date"></label>
+      <label for="a-stato">Stato<select id="a-stato"></select></label>
+      <label for="a-link" class="full">Link al file sul Drive<input id="a-link" type="url" maxlength="500" placeholder="https://drive.google.com/…"></label>
+      <label for="a-note" class="full">Note<textarea id="a-note" rows="2" maxlength="1000"></textarea></label>
+    </div>
+    <div id="a-dati"></div>
+    <p class="err" id="adem-err"></p>
+    <div class="actions">
+      <button type="button" class="danger left" id="adem-del" hidden>Elimina</button>
+      <button type="button" data-close>Annulla</button>
+      <button type="submit" class="primary">Salva</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-assoc">
+  <form id="form-assoc" method="dialog">
+    <h2>Dati dell'associazione</h2>
+    <p class="muted" style="margin:0">Servono a compilare i documenti. Li modifica solo l'amministratore.</p>
+    <div class="form-grid">
+      <label for="as-denominazione" class="full">Denominazione<input id="as-denominazione" type="text" maxlength="160"></label>
+      <label for="as-sede_via">Sede (via e civico)<input id="as-sede_via" type="text" maxlength="160"></label>
+      <label for="as-sede_comune">Comune<input id="as-sede_comune" type="text" maxlength="80"></label>
+      <label for="as-cf">Codice fiscale<input id="as-cf" type="text" maxlength="20"></label>
+      <label for="as-piva">Partita IVA<input id="as-piva" type="text" maxlength="20"></label>
+      <label for="as-email">Email<input id="as-email" type="email" maxlength="160"></label>
+      <label for="as-presidente">Presidente in carica<input id="as-presidente" type="text" maxlength="120"></label>
+      <label for="as-sindaco">Sindaco<input id="as-sindaco" type="text" maxlength="120"></label>
+      <label for="as-assessore">Assessore di riferimento<input id="as-assessore" type="text" maxlength="120"></label>
+      <label for="as-collaboratori" class="full">Collaboratori abituali<input id="as-collaboratori" type="text" maxlength="300"></label>
+    </div>
+    <h3>Conto per l'accredito dei contributi</h3>
+    <div class="form-grid">
+      <label for="as-banca">Banca e filiale<input id="as-banca" type="text" maxlength="160"></label>
+      <label for="as-banca_comune">Comune della filiale<input id="as-banca_comune" type="text" maxlength="80"></label>
+      <label for="as-banca_prov">Provincia<input id="as-banca_prov" type="text" maxlength="4"></label>
+      <label for="as-conto_n">Numero conto (facoltativo)<input id="as-conto_n" type="text" maxlength="40"></label>
+      <label for="as-iban" class="full">IBAN<input id="as-iban" type="text" maxlength="40"></label>
+      <label for="as-intestatario" class="full">Intestato a<input id="as-intestatario" type="text" maxlength="160"></label>
+    </div>
+    <h3>Dati personali del presidente</h3>
+    <p class="muted" style="margin:0">Visibili solo agli amministratori. Servono per le dichiarazioni sostitutive (Allegati 4 e 5).</p>
+    <div class="form-grid">
+      <label for="pr-cf">Codice fiscale<input id="pr-cf" type="text" maxlength="20"></label>
+      <label for="pr-telefono">Telefono<input id="pr-telefono" type="tel" maxlength="40"></label>
+      <label for="pr-nato_il">Nato il<input id="pr-nato_il" type="date"></label>
+      <label for="pr-nato_a">Nato a<input id="pr-nato_a" type="text" maxlength="80"></label>
+      <label for="pr-nato_prov">Provincia di nascita<input id="pr-nato_prov" type="text" maxlength="4"></label>
+      <label for="pr-res_comune">Residente a<input id="pr-res_comune" type="text" maxlength="80"></label>
+      <label for="pr-res_prov">Provincia di residenza<input id="pr-res_prov" type="text" maxlength="4"></label>
+      <label for="pr-res_via">Via<input id="pr-res_via" type="text" maxlength="120"></label>
+      <label for="pr-res_civico">Civico<input id="pr-res_civico" type="text" maxlength="20"></label>
+    </div>
+    <p class="err" id="assoc-err"></p>
+    <div class="actions"><button type="button" data-close>Annulla</button><button type="submit" class="primary">Salva</button></div>
+  </form>
+</dialog>
+
 <script>
 (() => {
 "use strict";
@@ -377,10 +450,10 @@ const PIANO = {
 };
 const CONTI = { cc: "Conto corrente", contanti: "Contanti", prepagata: "Prepagata", paypal: "PayPal" };
 const MESI = ["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
-const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", tessere: "Tessere", soci: "Soci" };
+const MODULI = { rendiconto: "Cruscotto e rendiconto", prima_nota: "Prima nota", eventi: "Eventi", tessere: "Tessere", adempimenti: "Adempimenti", soci: "Soci" };
 const LIVELLI = { none: "Nessun accesso", read: "Sola lettura", write: "Lettura e scrittura" };
 
-const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, anni: [], soci: [], tesserati: [], tessere: [], utenti: [], registro: [], error: "", loading: false };
+const S = { session: null, me: null, mov: [], eventi: [], cons: [], riep: null, anni: [], soci: [], tesserati: [], tessere: [], adem: [], assoc: null, pres: null, utenti: [], registro: [], error: "", loading: false };
 const filt = { q: "", causale: "", evento: "", mese: "", tipo: "", conto: "" };
 const SORT = {};
 function sh(view, key, label, cls = "") {
@@ -431,6 +504,11 @@ async function loadAll() {
     jobs.push(sb.from("tesserati").select("*").order("cognome").order("nome").then(r => { if (r.error) throw r.error; S.tesserati = r.data; }));
     jobs.push(sb.from("tessere").select("*").order("anno").order("numero").then(r => { if (r.error) throw r.error; S.tessere = r.data.map(t => ({ ...t, importo: t.importo == null ? null : Number(t.importo) })); }));
   }
+  if (R("adempimenti")) {
+    jobs.push(sb.from("adempimenti").select("*").order("scadenza").then(r => { if (r.error) throw r.error; S.adem = r.data; }));
+    jobs.push(sb.from("associazione").select("*").maybeSingle().then(r => { if (r.error) throw r.error; S.assoc = r.data; }));
+  } else S.adem = [];
+  if (S.me?.is_admin) jobs.push(sb.from("presidente_privato").select("*").maybeSingle().then(r => { if (r.error) throw r.error; S.pres = r.data; }));
   if (R("soci")) jobs.push(sb.from("soci").select("*").order("numero").then(r => { if (r.error) throw r.error; S.soci = r.data; }));
   if (S.me?.is_admin) {
     jobs.push(sb.from("utenti").select("*").order("email").then(r => { if (r.error) throw r.error; S.utenti = r.data; }));
@@ -481,6 +559,7 @@ function views() {
   if (R("prima_nota")) v.push(["movimenti", "Prima nota"]);
   if (R("eventi")) v.push(["eventi", "Eventi"]);
   if (R("tessere")) v.push(["tessere", "Tessere"]);
+  if (R("adempimenti")) v.push(["adempimenti", "Adempimenti"]);
   if (R("rendiconto")) v.push(["rendiconto", "Rendiconto"]);
   if (R("soci")) v.push(["soci", "Soci"]);
   if (S.me?.is_admin) v.push(["utenti", "Utenti"], ["registro", "Registro modifiche"]);
@@ -500,10 +579,11 @@ function render() {
   $("anno-sel").addEventListener("change", e => setAnno(Number(e.target.value)));
   let html = S.error ? `<p class="notice bad">${esc(S.error)}</p>` : "";
   if (!v) { app.innerHTML = html + `<section class="panel"><p>Il tuo utente non ha ancora moduli abilitati.</p></section>`; return; }
-  html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, tessere: vTessere, utenti: vUtenti, registro: vRegistro })[v]();
+  html += ({ cruscotto: vCruscotto, movimenti: vMovimenti, eventi: vEventi, rendiconto: vRendiconto, soci: vSoci, tessere: vTessere, adempimenti: vAdempimenti, utenti: vUtenti, registro: vRegistro })[v]();
   app.innerHTML = html;
   if (v === "movimenti") bindFilters();
   if (v === "tessere") bindTessere();
+  if (v === "adempimenti") bindAdem();
   if (v === "soci") { const q = $("s-q"); q.addEventListener("input", () => { sociQ = q.value; const pos = q.selectionStart; render(); const n = $("s-q"); n.focus(); n.setSelectionRange(pos, pos); }); }
 }
 
@@ -575,6 +655,7 @@ function vCruscotto() {
     ${ultimi.length ? `<section class="panel"><div class="panel-head"><h2>Ultimi movimenti</h2><a href="#movimenti">Tutta la prima nota</a></div>
       <div class="scroll"><table>${ultimi.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></section>` : ""}
     ${prossimo ? eventSummary(prossimo) : ""}
+    ${scadenzePanel()}
   </div>`;
 }
 function eventSummary(ev) {
@@ -638,7 +719,7 @@ function vMovimenti() {
       ${anyF ? "" : `<tr><td class="muted nowrap">01/01<span class="hs-i">/${ANNO}</span></td><td>Saldo iniziale</td><td class="hs"></td><td class="hs"></td><td class="n hs">${fmt(saldoIniziale())}</td><td class="hs"></td><td class="ss"></td><td class="n">${fmt(saldoIniziale())}</td>${w ? `<td class="hs"></td>` : ""}</tr>`}
       ${list.map(m => { const ev = eventoById(m.evento); return `<tr ${w ? `data-row="edit:${esc(m.id)}"` : ""}>
         <td class="muted nowrap">${dIt(m.data).slice(0, 5)}<span class="hs-i">${dIt(m.data).slice(5)}</span></td>
-        <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}${m.causale ? ` <span class="chip ss-i ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td>
+        <td>${esc(m.descrizione)}${m.conto ? ` <span class="muted">· ${CONTI[m.conto] || ""}</span>` : ""}${m.rendicontabile ? ` <span class="chip" title="${esc(m.documento || "Da rendicontare al Comune")}">Comune</span>` : ""}${m.causale ? ` <span class="chip ss-i ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td>
         <td class="hs">${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}" title="${esc(PIANO[m.causale] || "")}">${esc(m.causale)}</span>` : `<span class="chip wa">Da classificare</span>`}</td>
         <td class="hs">${ev ? esc(ev.nome) : ""}</td>
         <td class="n pos hs">${m.tipo === "E" ? fmt(m.importo) : ""}</td><td class="n neg hs">${m.tipo === "U" ? fmt(m.importo) : ""}</td><td class="n ss ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "+" : "−"}${fmt(m.importo)}</td>
@@ -677,11 +758,12 @@ function vEventi() {
     const hasPrev = st.prevTot || st.prevEnt;
     const ms = R("prima_nota") ? S.mov.filter(m => m.evento === ev.id) : [];
     return `<details class="panel ev-card" data-ev="${esc(ev.id)}" ${evOpen.has(ev.id) ? "open" : ""}>
-      <summary><div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${dIt(ev.data)}</span>` : ""}</div>
+      <summary><div class="panel-head"><div><h3>${esc(ev.nome)}</h3>${ev.data ? `<span class="muted">${ev.data_fine && ev.data_fine !== ev.data ? `${dIt(ev.data)} – ${dIt(ev.data_fine)}` : dIt(ev.data)}</span>` : ""}</div>
         <div class="actions"><span class="toggle"><span class="apri">Mostra dettaglio ▾</span><span class="chiudi">Nascondi dettaglio ▴</span></span><button data-stampa="evento:${esc(ev.id)}">Stampa (Excel)</button>${w ? `<button data-editev="${esc(ev.id)}">Modifica</button>` : ""}</div></div>
       <div class="kv"><div><span>Entrate</span><span class="pos">${fmt(st.E)}</span></div><div><span>Uscite</span><span class="neg">${fmt(st.U)}</span></div><div><span>Risultato</span><span class="${st.diff >= 0 ? "pos" : "neg"}">${fmt(st.diff)}</span></div>${hasPrev ? `<div><span>Risultato previsto</span><span class="${st.prevEnt - st.prevTot >= 0 ? "pos" : "neg"}">${fmt(st.prevEnt - st.prevTot)}</span></div>` : ""}${st.prevEnt ? `<div><span>Da incassare</span><span>${fmt(resE)}</span></div>` : ""}${st.prevTot ? `<div><span>Da spendere</span><span>${fmt(res)}</span></div>` : ""}</div></summary>
       <div class="ev-body">
       ${ev.note ? `<p class="muted">${esc(ev.note)}</p>` : ""}
+      ${(() => { if (!R("adempimenti")) return ""; const xs = S.adem.filter(a => a.evento === ev.id); if (!xs.length) return ""; const ok = xs.filter(a => ST_CHIUSI.has(a.stato)).length; return `<p class="ev-adem"><span class="chip ${ok === xs.length ? "ok" : "wa"}">Adempimenti ${ok}/${xs.length}</span> <a href="#adempimenti">Vedi gli adempimenti</a></p>`; })()}
       ${st.vociE.length ? prevTable("Entrate previste", st.vociE, st.prevEnt, st.E, resE, st.fuoriE, true) : ""}
       ${st.vociU.length ? prevTable("Spese previste", st.vociU, st.prevTot, st.U, res, st.fuori, false) : ""}
       ${ms.length ? `<details><summary>${ms.length} movimenti collegati</summary><div class="scroll"><table>${ms.map(m => `<tr><td class="muted">${dIt(m.data)}</td><td>${esc(m.descrizione)}</td><td>${m.causale ? `<span class="chip ${m.causale[0] === "B" ? "b" : ""}">${esc(m.causale)}</span>` : ""}</td><td class="n ${m.tipo === "E" ? "pos" : "neg"}">${m.tipo === "E" ? "" : "−"}${fmt(m.importo)}</td></tr>`).join("")}</table></div></details>` : st.n ? `<p class="muted">${st.n} movimenti collegati.</p>` : `<p class="muted">Nessun movimento collegato.</p>`}
@@ -810,8 +892,8 @@ function vUtenti() {
 
 function vRegistro() {
   const AZ = { INSERT: "Creato", UPDATE: "Modificato", DELETE: "Eliminato" };
-  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", esercizi: "Esercizi e saldi", tesserati: "Tesserati", tessere: "Tessere" };
-  const desc = r => { const d = r.dopo || r.prima || {}; if (r.tabella === "tessere") return `Tessera ${d.anno} · ${nomeP(personaById(d.tesserato_id)) || ""}`; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
+  const TB = { movimenti: "Prima nota", eventi: "Eventi", soci: "Soci", utenti: "Utenti", esercizi: "Esercizi e saldi", tesserati: "Tesserati", tessere: "Tessere", adempimenti: "Adempimenti", associazione: "Dati associazione", presidente_privato: "Dati del presidente" };
+  const desc = r => { const d = r.dopo || r.prima || {}; if (r.tabella === "tessere") return `Tessera ${d.anno} · ${nomeP(personaById(d.tesserato_id)) || ""}`; if (r.tabella === "adempimenti") return `${d.titolo} (${d.anno})`; if (r.tabella === "presidente_privato") return "dati personali"; return d.descrizione || d.nome && (d.cognome ? d.cognome + " " + d.nome : d.nome) || d.email || ""; };
   return `<section class="panel"><h2>Registro modifiche</h2><p class="muted">Le ultime ${S.registro.length} operazioni, con chi le ha fatte.</p>
     <div class="scroll tall"><table><thead><tr>${sh("registro", "ts", "Quando")}${sh("registro", "chi", "Chi")}${sh("registro", "sez", "Sezione")}${sh("registro", "op", "Operazione")}<th>Elemento</th></tr></thead>
     <tbody>${sortList("registro", S.registro, { ts: r => r.id, chi: r => r.utente || "", sez: r => TB[r.tabella] || r.tabella, op: r => AZ[r.azione] || r.azione }).map(r => `<tr><td class="muted">${new Date(r.ts).toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" })}</td><td>${esc(r.utente || "script iniziale")}</td><td>${TB[r.tabella] || esc(r.tabella)}</td><td>${AZ[r.azione] || esc(r.azione)}</td><td>${esc(desc(r))}</td></tr>`).join("")}</tbody></table></div>
@@ -836,6 +918,7 @@ function openMov(m) {
   $("m-data").value = m?.data || (ANNO === new Date().getFullYear() ? today() : `${ANNO}-12-31`); $("m-tipo").value = m?.tipo || "U"; $("m-importo").value = m ? m.importo : "";
   $("m-eserc").value = m?.esercizio ?? Number($("m-data").value.slice(0, 4)); esercManuale = !!m && m.esercizio !== Number(m.data.slice(0, 4));
   $("m-desc").value = m?.descrizione || ""; $("m-conto").value = m?.conto || "";
+  $("m-rend").checked = !!m?.rendicontabile; $("m-doc").value = m?.documento || ""; $("m-doc-l").hidden = !$("m-rend").checked;
   fillCausali($("m-tipo").value, m?.causale);
   $("m-evento").innerHTML = `<option value="">Nessuno</option>` + S.eventi.map(e => `<option value="${esc(e.id)}" ${e.id === m?.evento ? "selected" : ""}>${esc(e.nome)}</option>`).join("");
   fillVoci(m?.evento || "", m?.voce || "");
@@ -847,6 +930,7 @@ $("m-eserc").addEventListener("input", () => { esercManuale = true; });
 $("m-data").addEventListener("change", () => { if (!esercManuale && $("m-data").value) $("m-eserc").value = Number($("m-data").value.slice(0, 4)); });
 $("m-tipo").addEventListener("change", () => { fillCausali($("m-tipo").value); fillVoci($("m-evento").value, $("m-voce").value); });
 $("m-evento").addEventListener("change", () => fillVoci($("m-evento").value));
+$("m-rend").addEventListener("change", () => { $("m-doc-l").hidden = !$("m-rend").checked; });
 $("mov-del").addEventListener("click", async () => {
   if (!armMov) { armMov = true; $("mov-del").textContent = "Conferma eliminazione"; return; }
   const { error } = await sb.from("movimenti").delete().eq("id", edMov.id);
@@ -857,7 +941,7 @@ $("form-mov").addEventListener("submit", async e => {
   e.preventDefault();
   const importo = r2(Number($("m-importo").value)), tipo = $("m-tipo").value;
   if (!(importo > 0)) { $("mov-err").textContent = "Inserisci un importo maggiore di zero."; return; }
-  const row = { data: $("m-data").value, esercizio: Number($("m-eserc").value) || Number($("m-data").value.slice(0, 4)), tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value || null, evento: $("m-evento").value || null, voce: $("m-voce").value || null, conto: $("m-conto").value || null };
+  const row = { data: $("m-data").value, esercizio: Number($("m-eserc").value) || Number($("m-data").value.slice(0, 4)), tipo, importo, descrizione: $("m-desc").value.trim(), causale: $("m-causale").value || null, evento: $("m-evento").value || null, voce: $("m-voce").value || null, conto: $("m-conto").value || null, rendicontabile: $("m-rend").checked, documento: $("m-rend").checked ? $("m-doc").value.trim() : "" };
   if (!row.data || !row.descrizione) { $("mov-err").textContent = "Data e descrizione sono obbligatorie."; return; }
   const { error } = edMov ? await sb.from("movimenti").update(row).eq("id", edMov.id) : await sb.from("movimenti").insert(row);
   if (error) { $("mov-err").textContent = errMsg(error); return; }
@@ -879,7 +963,7 @@ function prevRow(v) {
 function openEv(ev) {
   edEv = ev || null; armEv = false;
   $("ev-title").textContent = ev ? "Modifica evento" : "Nuovo evento";
-  $("e-nome").value = ev?.nome || ""; $("e-data").value = ev?.data || ""; $("e-note").value = ev?.note || "";
+  $("e-nome").value = ev?.nome || ""; $("e-data").value = ev?.data || ""; $("e-fine").value = ev?.data_fine || ""; $("e-ediz").value = ev?.edizione ?? ""; $("e-note").value = ev?.note || "";
   $("e-prev").innerHTML = ""; (ev?.preventivo || []).forEach(v => $("e-prev").appendChild(prevRow(v)));
   $("ev-del").hidden = !ev; $("ev-del").textContent = "Elimina evento"; $("ev-err").textContent = "";
   $("dlg-ev").showModal();
@@ -895,7 +979,7 @@ $("ev-del").addEventListener("click", async () => {
 $("form-ev").addEventListener("submit", async e => {
   e.preventDefault();
   const preventivo = [...$("e-prev").children].map(r => ({ id: r.dataset.id, cod: r.querySelector(".pv-cod").value, voce: r.querySelector(".pv-voce").value.trim(), importo: r2(Number(r.querySelector(".pv-imp").value) || 0) })).filter(v => v.voce);
-  const row = { nome: $("e-nome").value.trim(), data: $("e-data").value || null, note: $("e-note").value.trim(), preventivo };
+  const row = { nome: $("e-nome").value.trim(), data: $("e-data").value || null, data_fine: $("e-fine").value || null, edizione: Number($("e-ediz").value) || null, note: $("e-note").value.trim(), preventivo };
   if (!row.nome) { $("ev-err").textContent = "Il nome è obbligatorio."; return; }
   const { error } = edEv ? await sb.from("eventi").update(row).eq("id", edEv.id) : await sb.from("eventi").insert(row);
   if (error) { $("ev-err").textContent = errMsg(error); return; }
@@ -1552,6 +1636,294 @@ function csvTessere() {
     ...S.tessere.filter(t => t.anno === anno).sort((a, b) => (a.numero ?? 9999) - (b.numero ?? 9999)).map(t => { const p = personaById(t.tesserato_id) || {}; return [t.numero ?? "", q(p.cognome), q(p.nome), q(p.email), q(p.telefono), p.socio_numero ? "Sì" : "", STATI[t.stato], n(t.importo), dIt(t.data_pagamento), q(t.note)].join(";"); })].join("\r\n");
 }
 
+// ---------- adempimenti ----------
+const ST_ADEM = { da_fare: "Da fare", in_corso: "In preparazione", inviato: "Inviato", approvato: "Approvato", respinto: "Respinto", non_serve: "Non serve" };
+const ST_CHIUSI = new Set(["inviato", "approvato", "respinto", "non_serve"]);
+const ST_CHIP = { da_fare: "ko", in_corso: "wa", inviato: "", approvato: "ok", respinto: "ko", non_serve: "" };
+const TIPI_ADEM = {
+  altro: { nome: "Altro", modelli: [] },
+  contributo_domanda: { nome: "Contributo del Comune: domanda", modelli: [] },
+  contributo_rendiconto: { nome: "Contributo del Comune: rendicontazione", modelli: [["allegato4", "Allegato 4 con bilancio consuntivo"], ["allegato5", "Allegato 5"], ["ritenuta", "Dichiarazione ritenuta 4%"]] },
+  patrocinio: { nome: "Richiesta di patrocinio", modelli: [["patrocinio", "Richiesta di patrocinio"]] },
+  santo_spirito: { nome: "Richiesta Centro Servizi Santo Spirito", modelli: [["santo_spirito", "Richiesta Santo Spirito"]] }
+};
+// elenco standard: [anni dopo l'anno di riferimento, "MM-GG"]
+const ADEM_STD = [
+  { tipo: "contributo_domanda", titolo: "Contributo partecipativo del Comune: domanda", scad: [0, "04-15"] },
+  { tipo: "patrocinio", titolo: "Richiesta di patrocinio al Comune", scad: [0, "10-20"] },
+  { tipo: "santo_spirito", titolo: "Richiesta Centro Servizi Santo Spirito", scad: [0, "10-20"] },
+  { tipo: "altro", titolo: "Occupazione suolo pubblico", scad: [0, "11-15"] },
+  { tipo: "altro", titolo: "Servizio affissioni", scad: [0, "11-15"] },
+  { tipo: "altro", titolo: "Assicurazione responsabilità civile per l'evento", scad: [0, "11-30"] },
+  { tipo: "contributo_rendiconto", titolo: "Contributo partecipativo del Comune: rendicontazione", scad: [1, "03-31"], note: "Allegato 4, Allegato 5 e dichiarazione ritenuta, con le copie delle fatture e del documento del presidente. La dichiarazione ritenuta va in bollo da 2 €." }
+];
+const af = { vista: "tutti" };
+const giorniA = iso => Math.round((new Date(iso + "T00:00:00") - new Date(today() + "T00:00:00")) / 86400000);
+const festivalAnno = anno => S.eventi.find(e => e.edizione && e.data && Number(e.data.slice(0, 4)) === anno) || S.eventi.find(e => /alkimia/i.test(e.nome) && e.data && Number(e.data.slice(0, 4)) === anno);
+function scadChip(a) {
+  if (!a.scadenza) return "";
+  if (ST_CHIUSI.has(a.stato)) return `<span class="muted">${dIt(a.scadenza)}</span>`;
+  const g = giorniA(a.scadenza);
+  return `${dIt(a.scadenza)}<br>${g < 0 ? `<span class="chip ko">Scaduto da ${-g} g</span>` : g === 0 ? `<span class="chip ko">Oggi</span>` : g <= 30 ? `<span class="chip wa">Tra ${g} g</span>` : `<span class="muted">tra ${g} giorni</span>`}`;
+}
+function statoCell(a, w) {
+  if (!w) return `<span class="chip ${ST_CHIP[a.stato]}">${ST_ADEM[a.stato]}</span>`;
+  return `<select class="stato-sel" data-astato="${esc(a.id)}" aria-label="Stato di ${esc(a.titolo)}">${Object.entries(ST_ADEM).map(([k, n]) => `<option value="${k}" ${k === a.stato ? "selected" : ""}>${n}</option>`).join("")}</select>`;
+}
+function vAdempimenti() {
+  const w = W("adempimenti");
+  const tutti = S.adem.filter(a => a.anno === ANNO);
+  const list = sortList("adem", tutti.filter(a => af.vista === "tutti" || !ST_CHIUSI.has(a.stato)).sort((a, b) => (a.scadenza || "9999").localeCompare(b.scadenza || "9999") || a.titolo.localeCompare(b.titolo)),
+    { titolo: a => a.titolo, evento: a => eventoById(a.evento)?.nome || "", scadenza: a => a.scadenza || "9999", stato: a => Object.keys(ST_ADEM).indexOf(a.stato) });
+  const aperti = tutti.filter(a => !ST_CHIUSI.has(a.stato)).length, scaduti = tutti.filter(a => !ST_CHIUSI.has(a.stato) && a.scadenza && giorniA(a.scadenza) < 0).length;
+  const mancaStd = ADEM_STD.filter(s => !tutti.some(a => a.tipo === s.tipo && a.titolo === s.titolo)).length;
+  return `<section class="panel">
+    <div class="panel-head"><h2>Adempimenti ${ANNO}</h2>
+      <div class="actions">${S.me?.is_admin ? `<button id="btn-assoc">Dati associazione</button>` : ""}${w && mancaStd ? `<button id="btn-adem-std">${tutti.length ? "Aggiungi quelli standard mancanti" : `Crea l'elenco standard ${ANNO}`}</button>` : ""}${w ? `<button class="primary" id="btn-newadem">Nuovo adempimento</button>` : ""}</div></div>
+    <p class="muted">Domande, richieste e rendicontazioni dell'anno. I file restano sul Drive dell'associazione: qui ne tieni il link e lo stato. L'anno è quello dell'attività: la rendicontazione del ${ANNO} scade a inizio ${ANNO + 1}.</p>
+    <div class="kv"><div><span>Adempimenti</span><span>${tutti.length}</span></div><div><span>Aperti</span><span>${aperti}</span></div><div><span>Scaduti</span><span class="${scaduti ? "neg" : ""}">${scaduti}</span></div><div><span>Completati</span><span>${tutti.length - aperti}</span></div></div>
+    <div class="filters"><label for="af-vista">Mostra<select id="af-vista"><option value="tutti" ${af.vista === "tutti" ? "selected" : ""}>Tutti</option><option value="aperti" ${af.vista === "aperti" ? "selected" : ""}>Solo da completare</option></select></label></div>
+    ${list.length ? `<div class="scroll tall"><table><thead><tr>${sh("adem", "titolo", "Adempimento")}${sh("adem", "evento", "Evento", "hs")}${sh("adem", "scadenza", "Scadenza")}${sh("adem", "stato", "Stato")}<th class="hs">File</th><th></th></tr></thead><tbody>
+    ${list.map(a => { const ev = eventoById(a.evento), mod = TIPI_ADEM[a.tipo]?.modelli.length; return `<tr>
+      <td><strong>${esc(a.titolo)}</strong>${a.note ? `<br><span class="muted">${esc(a.note)}</span>` : ""}${ev ? `<span class="ss-i"><br><span class="muted">${esc(ev.nome)}</span></span>` : ""}</td>
+      <td class="hs">${ev ? esc(ev.nome) : ""}</td><td class="nowrap">${scadChip(a)}</td><td>${statoCell(a, w)}</td>
+      <td class="hs">${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">Apri</a>` : ""}</td>
+      <td class="nowrap"><button class="link" data-adem="${esc(a.id)}">${w && mod ? "Prepara documenti" : w ? "Modifica" : "Dettagli"}</button></td></tr>`; }).join("")}
+    </tbody></table></div>` : `<p class="muted">${tutti.length ? "Nessun adempimento con questo filtro." : `Nessun adempimento per il ${ANNO}.${w ? " Crea l'elenco standard per partire dalla lista di ogni anno." : ""}`}</p>`}
+  </section>`;
+}
+function bindAdem() {
+  const v = $("af-vista"); if (v) v.addEventListener("change", () => { af.vista = v.value; render(); });
+  app.querySelectorAll("[data-astato]").forEach(s => s.addEventListener("change", async () => {
+    const { error } = await sb.from("adempimenti").update({ stato: s.value }).eq("id", s.dataset.astato);
+    if (error) { S.error = errMsg(error); render(); return; }
+    const a = S.adem.find(x => x.id === s.dataset.astato); if (a) a.stato = s.value; render();
+  }));
+}
+function scadenzePanel() {
+  if (!R("adempimenti")) return "";
+  const lim = 60, xs = S.adem.filter(a => !ST_CHIUSI.has(a.stato) && a.scadenza && giorniA(a.scadenza) <= lim).sort((a, b) => a.scadenza.localeCompare(b.scadenza)).slice(0, 8);
+  return `<section class="panel"><div class="panel-head"><h2>Scadenze</h2><a href="#adempimenti">Tutti gli adempimenti</a></div>
+    ${xs.length ? `<div class="scroll"><table>${xs.map(a => `<tr><td>${esc(a.titolo)}<br><span class="muted">${a.anno}${a.evento ? " · " + esc(eventoById(a.evento)?.nome || "") : ""}</span></td><td class="nowrap">${scadChip(a)}</td></tr>`).join("")}</table></div>` : `<p class="muted">Nessuna scadenza nei prossimi ${lim} giorni.</p>`}</section>`;
+}
+async function creaStandard() {
+  const tutti = S.adem.filter(a => a.anno === ANNO), ev = festivalAnno(ANNO);
+  const rows = ADEM_STD.filter(s => !tutti.some(a => a.tipo === s.tipo && a.titolo === s.titolo))
+    .map(s => ({ anno: ANNO, tipo: s.tipo, titolo: s.titolo, note: s.note || "", evento: ev?.id || null, scadenza: `${ANNO + s.scad[0]}-${s.scad[1]}` }));
+  if (!rows.length) return;
+  const { error } = await sb.from("adempimenti").insert(rows);
+  if (error) { S.error = errMsg(error); render(); return; }
+  loadAll();
+}
+
+// date in italiano per i documenti
+const MESI_L = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+const GIORNI_L = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+const pd = iso => { const [y, m, d] = iso.split("-").map(Number); return { y, m, d, dt: new Date(y, m - 1, d) }; };
+const dataLunga = iso => { if (!iso) return ""; const x = pd(iso); return `${x.d} ${MESI_L[x.m - 1]} ${x.y}`; };
+const giornoSett = iso => { if (!iso) return ""; const x = pd(iso); return `${GIORNI_L[x.dt.getDay()]} ${x.d} ${MESI_L[x.m - 1]}`; };
+const diffG = (a, b) => Math.round((pd(b).dt - pd(a).dt) / 86400000);
+function giorniTra(dal, al) { const out = []; for (let i = 0; i <= diffG(dal, al); i++) { const t = new Date(pd(dal).dt); t.setDate(t.getDate() + i); out.push(t.getDate()); } return out; }
+function rangeBreve(dal, al) {
+  if (!dal) return ""; al = al || dal; const a = pd(dal), b = pd(al);
+  if (dal === al) return dataLunga(dal);
+  if (a.m === b.m && a.y === b.y) return `${a.d}-${b.d} ${MESI_L[b.m - 1]} ${b.y}`;
+  return `${a.d} ${MESI_L[a.m - 1]}${a.y !== b.y ? " " + a.y : ""} - ${dataLunga(al)}`;
+}
+function periodoBreve(dal, al) {
+  if (!dal) return ""; al = al || dal; const a = pd(dal), b = pd(al), n = diffG(dal, al) + 1;
+  if (a.m === b.m && a.y === b.y && n > 1 && n <= 5) return `${giorniTra(dal, al).join("-")} ${MESI_L[b.m - 1]} ${b.y}`;
+  return rangeBreve(dal, al);
+}
+function giorniEvento(dal, al) {
+  if (!dal) return ""; al = al || dal; const a = pd(dal), b = pd(al), n = diffG(dal, al) + 1;
+  if (n === 1) return `il giorno ${dataLunga(dal)}`;
+  if (a.m === b.m && a.y === b.y && n <= 5) { const g = giorniTra(dal, al); return `nei giorni ${g.slice(0, -1).join(", ")} e ${g[g.length - 1]} ${MESI_L[b.m - 1]} ${b.y}`; }
+  return `dal ${a.d} ${MESI_L[a.m - 1]} al ${dataLunga(al)}`;
+}
+function periodoUso(evDal, evAl, usoDal, usoAl) {
+  if (!evDal) return ""; evAl = evAl || evDal; usoDal = usoDal || evDal; usoAl = usoAl || evAl;
+  const prima = Math.max(0, diffG(usoDal, evDal)), dopo = Math.max(0, diffG(evAl, usoAl)), r = rangeBreve(usoDal, usoAl);
+  if (!prima && !dopo) return `per i giorni dell’evento, e pertanto per il periodo ${r}`;
+  const parti = [];
+  if (prima) parti.push(prima === 1 ? "il giorno precedente l’evento" : `i ${prima} giorni precedenti l’evento`);
+  if (dopo) parti.push(dopo === 1 ? (prima ? "quello successivo" : "il giorno successivo") : (prima ? `i ${dopo} successivi` : `i ${dopo} giorni successivi`));
+  return `per ${parti.join(" e ")}, pertanto per il periodo ${r}`;
+}
+const num2 = v => (Number(v) || 0).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// dialog adempimento
+let edAdem = null, armAdem = false, ademMov = [];
+function campiDati(tipo, d, ev, anno) {
+  const A = S.assoc || {};
+  const inp = (id, label, val, type = "text", extra = "") => `<label for="ad-${id}" ${extra}>${label}<input id="ad-${id}" type="${type}" value="${esc(val ?? "")}"></label>`;
+  const chk = (id, label, on) => `<label class="check full" for="ad-${id}"><input id="ad-${id}" type="checkbox" ${on ? "checked" : ""}> ${label}</label>`;
+  const evInfo = ev ? `<p class="muted" style="margin:0">Evento: <strong>${esc(ev.nome)}</strong>, ${ev.data ? rangeBreve(ev.data, ev.data_fine) : "date da inserire nell'evento"}${ev.edizione ? `, ${ev.edizione}ª edizione` : ""}. Date ed edizione si cambiano dalla scheda dell'evento.</p>` : `<p class="notice">Collega l'evento: date ed edizione dei documenti si prendono da lì.</p>`;
+  if (tipo === "santo_spirito") return `<h3>Dati per il documento</h3>${evInfo}<div class="form-grid">
+    ${inp("data_lettera", "Data della lettera", d.data_lettera || today(), "date")}
+    ${inp("allestimento", "Giorno di carico/scarico", d.allestimento || ev?.data || "", "date")}
+    ${inp("uso_dal", "Uso della struttura dal", d.uso_dal || ev?.data || "", "date")}
+    ${inp("uso_al", "al", d.uso_al || ev?.data_fine || ev?.data || "", "date")}</div>`;
+  if (tipo === "patrocinio") return `<h3>Dati per il documento</h3>${evInfo}<div class="form-grid">
+    ${inp("data_lettera", "Data della lettera", d.data_lettera || today(), "date")}
+    ${inp("collaboratori", "Collaboratori", d.collaboratori ?? A.collaboratori ?? "", "text", 'class="full"')}</div>`;
+  if (tipo === "contributo_rendiconto") {
+    const U = ademMov.filter(m => m.tipo === "U"), E = ademMov.filter(m => m.tipo === "E");
+    const tU = r2(U.reduce((s, m) => s + Number(m.importo), 0)), tE = r2(E.reduce((s, m) => s + Number(m.importo), 0));
+    return `<h3>Dati per i documenti</h3>${evInfo}<div class="form-grid">
+    ${inp("oggetto", "Oggetto del contributo", d.oggetto || `Contributo Partecipativo anno ${anno}`, "text", 'class="full"')}
+    ${inp("iniziativa", "Iniziativa finanziata", d.iniziativa || (ev ? `${ev.nome} ${ev.data ? ev.data.slice(0, 4) : ""}`.trim() : ""), "text", 'class="full"')}
+    ${inp("determina", "Determina di concessione n. (facoltativa)", d.determina || "", "text")}
+    ${inp("data_firma", "Data di firma", d.data_firma || today(), "date")}
+    ${chk("commerciale", "L'iniziativa ha carattere commerciale (ritenuta del 4%)", d.commerciale)}
+    ${chk("entrate", "Indica anche le entrate nel bilancio consuntivo", d.entrate)}</div>
+    <h3>Spese da rendicontare (${anno})</h3>
+    <p class="muted" style="margin:0">Sono i movimenti dell'esercizio ${anno} segnati "Da rendicontare al Comune" in prima nota. Nel documento compare il giustificativo, se indicato.</p>
+    ${R("prima_nota") ? (U.length ? `<div class="scroll"><table>${U.map(m => `<tr><td class="muted nowrap">${dIt(m.data)}</td><td>${esc(m.documento || m.descrizione)}</td><td class="n">${fmt(m.importo)}</td></tr>`).join("")}<tr class="total"><td></td><td>Totale uscite</td><td class="n">${fmt(tU)}</td></tr>${d.entrate ? `<tr><td></td><td>Entrate da rendicontare (${E.length})</td><td class="n">${fmt(tE)}</td></tr>` : ""}</table></div>` : `<p class="notice">Nessun movimento ${anno} segnato da rendicontare: aprilo in prima nota e spunta "Da rendicontare al Comune".</p>`) : `<p class="muted">Per vedere le spese serve l'accesso alla prima nota.</p>`}`;
+  }
+  return "";
+}
+function bottoniModelli(tipo) {
+  const ms = TIPI_ADEM[tipo]?.modelli || [];
+  if (!ms.length) return "";
+  return `<h3>Genera i documenti Word</h3><div class="actions" style="justify-content:flex-start">${ms.map(([k, n]) => `<button type="button" data-genera="${k}">${n}</button>`).join("")}</div>
+  <p class="muted" style="margin:0">Il file si scarica compilato con i dati qui sopra: rivedilo, firmalo e caricalo sul Drive dell'associazione, poi incolla il link e imposta lo stato.${S.me?.is_admin ? "" : " I dati personali del presidente li vede solo l'amministratore: nel file restano vuoti."}</p>`;
+}
+function disegnaDati() {
+  const tipo = $("a-tipo").value, ev = eventoById($("a-evento").value), anno = Number($("a-anno").value) || ANNO;
+  const d = { ...(edAdem?.dati || {}), ...leggiDati() };
+  $("a-dati").innerHTML = campiDati(tipo, d, ev, anno) + bottoniModelli(tipo);
+  $("a-dati").querySelectorAll('input[type="checkbox"]').forEach(c => c.addEventListener("change", () => disegnaDati()));
+}
+function leggiDati() {
+  const out = {};
+  $("a-dati").querySelectorAll("input[id^='ad-']").forEach(i => { out[i.id.slice(3)] = i.type === "checkbox" ? i.checked : i.value; });
+  return out;
+}
+async function caricaMovRend(anno) {
+  ademMov = [];
+  if (!R("prima_nota")) return;
+  const r = await sb.from("movimenti").select("*").eq("esercizio", anno).eq("rendicontabile", true).order("data");
+  if (!r.error) ademMov = r.data;
+}
+async function openAdem(a) {
+  edAdem = a || null; armAdem = false;
+  const w = W("adempimenti");
+  $("adem-title").textContent = a ? a.titolo : "Nuovo adempimento";
+  $("a-titolo").value = a?.titolo || ""; $("a-anno").value = a?.anno ?? ANNO;
+  $("a-tipo").innerHTML = Object.entries(TIPI_ADEM).map(([k, t]) => `<option value="${k}" ${k === (a?.tipo || "altro") ? "selected" : ""}>${t.nome}</option>`).join("");
+  $("a-evento").innerHTML = `<option value="">Nessuno</option>` + [...S.eventi].sort((x, y) => (y.data || "").localeCompare(x.data || "")).map(e => `<option value="${esc(e.id)}" ${e.id === (a ? a.evento : festivalAnno(ANNO)?.id) ? "selected" : ""}>${esc(e.nome)}</option>`).join("");
+  $("a-scad").value = a?.scadenza || ""; $("a-link").value = a?.link || ""; $("a-note").value = a?.note || "";
+  $("a-stato").innerHTML = Object.entries(ST_ADEM).map(([k, n]) => `<option value="${k}" ${k === (a?.stato || "da_fare") ? "selected" : ""}>${n}</option>`).join("");
+  $("adem-del").hidden = !a || !w; $("adem-del").textContent = "Elimina"; $("adem-err").textContent = "";
+  $("form-adem").querySelector('button[type="submit"]').hidden = !w;
+  $("a-dati").innerHTML = "";
+  if (a?.tipo === "contributo_rendiconto") await caricaMovRend(a.anno);
+  disegnaDati();
+  $("form-adem").querySelectorAll("input, select, textarea").forEach(el => { el.disabled = !w; });
+  $("dlg-adem").showModal();
+}
+$("a-tipo").addEventListener("change", async () => { if ($("a-tipo").value === "contributo_rendiconto") await caricaMovRend(Number($("a-anno").value) || ANNO); disegnaDati(); });
+$("a-evento").addEventListener("change", () => disegnaDati());
+$("a-anno").addEventListener("change", async () => { if ($("a-tipo").value === "contributo_rendiconto") await caricaMovRend(Number($("a-anno").value) || ANNO); disegnaDati(); });
+function rigaAdem() {
+  return { titolo: $("a-titolo").value.trim(), anno: Number($("a-anno").value), tipo: $("a-tipo").value, evento: $("a-evento").value || null, scadenza: $("a-scad").value || null, stato: $("a-stato").value, link: $("a-link").value.trim(), note: $("a-note").value.trim(), dati: { ...(edAdem?.dati || {}), ...leggiDati() } };
+}
+async function salvaAdem() {
+  const row = rigaAdem();
+  if (!row.titolo || !row.anno) { $("adem-err").textContent = "Titolo e anno sono obbligatori."; return null; }
+  const r = edAdem ? await sb.from("adempimenti").update(row).eq("id", edAdem.id).select().single() : await sb.from("adempimenti").insert(row).select().single();
+  if (r.error) { $("adem-err").textContent = errMsg(r.error); return null; }
+  edAdem = r.data; const i = S.adem.findIndex(x => x.id === r.data.id); if (i >= 0) S.adem[i] = r.data; else S.adem.push(r.data);
+  $("adem-del").hidden = false;
+  return r.data;
+}
+$("form-adem").addEventListener("submit", async e => { e.preventDefault(); if (await salvaAdem()) { $("dlg-adem").close(); loadAll(); } });
+$("adem-del").addEventListener("click", async () => {
+  if (!armAdem) { armAdem = true; $("adem-del").textContent = "Conferma eliminazione"; return; }
+  const { error } = await sb.from("adempimenti").delete().eq("id", edAdem.id);
+  if (error) { $("adem-err").textContent = errMsg(error); return; }
+  $("dlg-adem").close(); loadAll();
+});
+$("a-dati").addEventListener("click", async e => {
+  const b = e.target.closest("[data-genera]"); if (!b) return;
+  const testo = b.textContent; b.disabled = true; b.textContent = "Preparo il file…"; $("adem-err").textContent = "";
+  try {
+    const a = W("adempimenti") ? await salvaAdem() : edAdem; if (!a) return;
+    if (a.tipo === "contributo_rendiconto") await caricaMovRend(a.anno);
+    await generaDoc(b.dataset.genera, a);
+  } catch (err) { $("adem-err").textContent = "Documento non generato: " + (err?.message || err); }
+  finally { b.disabled = false; b.textContent = testo; }
+});
+
+let docxP = null;
+function loadDocx() {
+  if (window.PizZip && window.docxtemplater) return Promise.resolve();
+  const one = src => new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => ko(new Error("libreria non caricata")); document.head.appendChild(sc); });
+  return docxP ||= Promise.all([one("https://cdn.jsdelivr.net/npm/pizzip@3.3.0/dist/pizzip.min.js"), one("https://cdn.jsdelivr.net/npm/docxtemplater@3.71.1/build/docxtemplater.js")]).catch(e => { docxP = null; throw e; });
+}
+function datiDocumento(a) {
+  const A = S.assoc || {}, P = S.pres || {}, d = a.dati || {}, ev = eventoById(a.evento);
+  const dal = ev?.data || "", al = ev?.data_fine || ev?.data || "";
+  const U = ademMov.filter(m => m.tipo === "U"), E = ademMov.filter(m => m.tipo === "E");
+  const tU = r2(U.reduce((s, m) => s + Number(m.importo), 0)), tE = r2(E.reduce((s, m) => s + Number(m.importo), 0));
+  const iniziativa = d.iniziativa || (ev ? `${ev.nome} ${dal.slice(0, 4)}`.trim() : "");
+  const comm = !!d.commerciale, X = "X  ";
+  return {
+    denominazione: A.denominazione || "", sede_comune: A.sede_comune || "", sede_via: A.sede_via || "", cf: A.cf || "", piva: A.piva || "", email: A.email || "",
+    presidente: A.presidente || "", presidente_tel: P.telefono || "", sindaco: A.sindaco || "", assessore: A.assessore || "",
+    collaboratori: d.collaboratori ?? A.collaboratori ?? "",
+    anno: dal ? dal.slice(0, 4) : String(a.anno), edizione: ev?.edizione ?? "",
+    data_lettera: dataLunga(d.data_lettera || today()),
+    giorni_evento: giorniEvento(dal, al), periodo_breve: periodoBreve(dal, al), periodo_uso: periodoUso(dal, al, d.uso_dal, d.uso_al),
+    giorno_allestimento: giornoSett(d.allestimento || dal),
+    pres_cf: P.cf || "", nato_il: dIt(P.nato_il), nato_a: P.nato_a || "", nato_prov: P.nato_prov || "", res_comune: P.res_comune || "", res_prov: P.res_prov || "", res_via: P.res_via || "", res_civico: P.res_civico || "",
+    banca: A.banca || "", banca_comune: A.banca_comune || "", banca_prov: A.banca_prov || "", iban: A.iban || "", conto_n: A.conto_n || "", intestatario: A.intestatario || "",
+    luogo: A.sede_comune || "", data_firma: dIt(d.data_firma || today()), qualita: "Legale Rappresentante",
+    oggetto: d.oggetto || `Contributo Partecipativo anno ${a.anno}`, iniziativa, descr_spese: iniziativa ? `la realizzazione dell’iniziativa ${iniziativa}` : "",
+    concessione: d.determina ? `Concesso dal Comune di Gubbio con Determinazione del Dirigente del Settore Sociale, Cultura, Turismo n. ${d.determina}` : "",
+    x_comm: comm ? X : "", x_noncomm: comm ? "" : X, x_rit: comm ? X : "", x_norit: comm ? "" : X, x_pres: X, presenta: comm ? "presenta" : "non presenta",
+    svolta: !dal ? "" : dal === al ? `in data ${dIt(dal)}` : `dal ${dIt(dal)} al ${dIt(al)}`,
+    uscite: U.length ? U.map(m => ({ voce: m.documento || m.descrizione, importo: num2(m.importo) })) : [{ voce: "", importo: "" }],
+    entrate: d.entrate && E.length ? E.map(m => ({ voce: m.documento || m.descrizione, importo: num2(m.importo) })) : [{ voce: "", importo: "" }],
+    tot_uscite: U.length ? num2(tU) : "", tot_entrate: d.entrate && E.length ? num2(tE) : ""
+  };
+}
+const NOMI_DOC = { santo_spirito: "Richiesta Centro Servizi Santo Spirito", patrocinio: "Richiesta patrocinio", allegato4: "Allegato 4 - consuntivo", allegato5: "Allegato 5", ritenuta: "Dichiarazione ritenuta" };
+async function generaDoc(modello, a) {
+  await loadDocx();
+  const res = await fetch(`modelli/${modello}.docx`, { cache: "no-cache" });
+  if (!res.ok) throw new Error("modello non trovato");
+  const zip = new window.PizZip(await res.arrayBuffer());
+  const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true, nullGetter: () => "" });
+  doc.render(datiDocumento(a));
+  const blob = doc.getZip().generate({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  const url = URL.createObjectURL(blob), link = document.createElement("a");
+  link.href = url; link.download = `${NOMI_DOC[modello] || modello} Alkimia ${a.anno}.docx`; document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// dialog dati associazione
+const CAMPI_AS = ["denominazione", "sede_via", "sede_comune", "cf", "piva", "email", "presidente", "sindaco", "assessore", "collaboratori", "banca", "banca_comune", "banca_prov", "conto_n", "iban", "intestatario"];
+const CAMPI_PR = ["cf", "telefono", "nato_il", "nato_a", "nato_prov", "res_comune", "res_prov", "res_via", "res_civico"];
+function openAssoc() {
+  CAMPI_AS.forEach(k => $("as-" + k).value = S.assoc?.[k] ?? "");
+  CAMPI_PR.forEach(k => $("pr-" + k).value = S.pres?.[k] ?? "");
+  $("assoc-err").textContent = ""; $("dlg-assoc").showModal();
+}
+$("form-assoc").addEventListener("submit", async e => {
+  e.preventDefault();
+  const as = {}, pr = {};
+  CAMPI_AS.forEach(k => as[k] = $("as-" + k).value.trim());
+  CAMPI_PR.forEach(k => pr[k] = $("pr-" + k).value.trim() || (k === "nato_il" ? null : ""));
+  as.iban = as.iban.replace(/\s+/g, "").toUpperCase();
+  const r1 = await sb.from("associazione").update(as).eq("id", 1);
+  if (r1.error) { $("assoc-err").textContent = errMsg(r1.error); return; }
+  const r2_ = await sb.from("presidente_privato").upsert({ id: 1, ...pr });
+  if (r2_.error) { $("assoc-err").textContent = errMsg(r2_.error); return; }
+  $("dlg-assoc").close(); loadAll();
+});
+
 // ---------- click ----------
 document.addEventListener("click", async e => {
   const row = e.target.closest("tr[data-row]");
@@ -1576,6 +1948,10 @@ document.addEventListener("click", async e => {
   else if (t.id === "btn-newtess") openTess(null, null, annoNuovo());
   else if (t.dataset.tessera) openTess(S.tessere.find(x => x.id === t.dataset.tessera));
   else if (t.dataset.persona) openPersona(t.dataset.persona);
+  else if (t.id === "btn-newadem") openAdem();
+  else if (t.dataset.adem) openAdem(S.adem.find(a => a.id === t.dataset.adem));
+  else if (t.id === "btn-adem-std") { t.disabled = true; creaStandard(); }
+  else if (t.id === "btn-assoc") openAssoc();
   else if (t.dataset.rinnova) openTess(null, personaById(t.dataset.rinnova), annoSel());
 });
 window.addEventListener("hashchange", render);
